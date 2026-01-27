@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finalizare Comandă - TechLab</title>
+    <link rel="stylesheet" href="static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Checkout Page Specific Styles */
+        .checkout-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 3rem;
+            align-items: start;
+        }
+        
+        .cart-items-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+        
+        .cart-item {
+            display: grid;
+            grid-template-columns: 80px 1fr auto auto;
+            gap: 1.5rem;
+            align-items: center;
+            padding: 1.5rem;
+            background: var(--bg-darker);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .cart-item:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .cart-item-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--bg-card);
+        }
+        
+        .cart-item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .cart-item-details {
+            flex: 1;
+        }
+        
+        .cart-item-details h4 {
+            font-family: var(--font-display);
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .cart-item-price {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .cart-item-quantity {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.25rem;
+        }
+        
+        .quantity-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .quantity-btn:hover {
+            background: var(--primary);
+            color: var(--bg-darker);
+        }
+        
+        .quantity-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .cart-item-quantity input {
+            width: 50px;
+            text-align: center;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .cart-item-quantity input::-webkit-inner-spin-button,
+        .cart-item-quantity input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        .cart-item-subtotal {
+            font-family: var(--font-display);
+            color: var(--primary);
+            font-size: 1.2rem;
+            font-weight: 700;
+            min-width: 120px;
+            text-align: right;
+        }
+        
+        .cart-item-remove {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--error);
+            font-size: 1.2rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .cart-item-remove:hover {
+            background: var(--error);
+            color: white;
+            border-color: var(--error);
+        }
+        
+        .order-summary {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            position: sticky;
+            top: 2rem;
+        }
+        
+        .order-summary h3 {
+            font-family: var(--font-display);
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+        
+        .summary-total {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            border-top: 2px solid var(--primary);
+            margin-top: 1rem;
+            padding-top: 1.5rem !important;
+        }
+        
+        .summary-total span:last-child {
+            color: var(--primary);
+        }
+        
+        .empty-cart {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+        
+        .empty-cart-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .customer-form {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-darker);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        /* Accordion Styles */
+        .accordion-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .accordion-section:hover {
+            border-color: var(--primary);
+        }
+        
+        .accordion-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+        
+        .accordion-header:hover {
+            background: rgba(0, 217, 255, 0.05);
+        }
+        
+        .accordion-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .accordion-icon {
+            font-size: 1.5rem;
+        }
+        
+        .accordion-arrow {
+            color: var(--text-secondary);
+            transition: transform 0.3s ease;
+        }
+        
+        .accordion-section.active .accordion-arrow {
+            transform: rotate(180deg);
+        }
+        
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+            padding: 0 1.5rem;
+        }
+        
+        .accordion-section.active .accordion-content {
+            max-height: 2000px;
+            padding: 0 1.5rem 1.5rem;
+        }
+        
+        /* Client Type Selector */
+        .client-type-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .radio-card {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .radio-card input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+        
+        .radio-card-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: var(--bg-darker);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+        
+        .radio-card:hover .radio-card-content {
+            border-color: var(--primary);
+        }
+        
+        .radio-card input[type="radio"]:checked + .radio-card-content {
+            border-color: var(--primary);
+            background: rgba(0, 217, 255, 0.1);
+        }
+        
+        .radio-icon {
+            font-size: 2rem;
+        }
+        
+        .radio-card-content strong {
+            display: block;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .radio-card-content p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+        
+        @media (max-width: 1024px) {
+            .client-type-selector {
+                grid-template-columns: 1fr;
+            }
+            .checkout-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .order-summary {
+                position: static;
+                order: -1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .cart-item {
+                grid-template-columns: 60px 1fr;
+                gap: 1rem;
+            }
+            
+            .cart-item-quantity,
+            .cart-item-subtotal {
+                grid-column: 2;
+            }
+            
+            .cart-item-remove {
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Logo -->
+    <div class="logo-corner">
+        <a href="index.html" style="text-decoration: none; color: inherit;">
+            <div class="logo-text">TECH<span class="logo-accent">LAB</span></div>
+            <div class="logo-subtitle">Digital Manufacturing</div>
+        </a>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="main-nav">
+        <div class="nav-container">
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link">Acasă</a></li>
+                <li><a href="filamente.html" class="nav-link">Filamente</a></li>
+                <li><a href="componente.html" class="nav-link">Componente</a></li>
+                <li><a href="print3d.html" class="nav-link">Print 3D</a></li>
+                <li><a href="laser.html" class="nav-link">Laser</a></li>
+                <li><a href="contact.html" class="nav-link">Contact</a></li>
+            </ul>
+            
+            <a href="checkout.html" class="cart-icon">
+                🛒 Coș
+                <span class="cart-count">0</span>
+            </a>
+            
+            <button class="hamburger" id="hamburger" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="nav-overlay" id="nav-overlay"></div>
+
+    <!-- Main Content -->
+    <main class="main-content" style="padding-top: 6rem;">
+        <div style="max-width: 1400px; margin: 0 auto; padding: 0 2rem 4rem;">
+            <div class="page-header" style="text-align: center; margin-bottom: 3rem;">
+                <h1 class="page-title" style="font-size: 3rem; margin-bottom: 1rem;">
+                    <span style="color: var(--primary);">Coșul</span> Tău
+                </h1>
+                <p class="page-subtitle" style="font-size: 1.2rem; color: var(--text-secondary);">
+                    Revizuiește produsele și finalizează comanda
+                </p>
+            </div>
+
+            <div class="checkout-container">
+                <!-- Produse din Coș -->
+                <div>
+                    <div class="cart-items-section">
+                        <h2 style="font-family: var(--font-display); color: var(--text-primary); margin-bottom: 1.5rem;">
+                            Produse Selectate
+                        </h2>
+                        <div id="cart-items">
+                            <!-- Se încarcă dinamic -->
+                        </div>
+                    </div>
+
+                    <!-- Formular Date Client cu Accordion -->
+                    <div class="customer-form" id="customer-form-section" style="display: none;">
+                        <form id="checkout-form">
+                            <!-- Tip Client -->
+                            <div class="accordion-section active" id="client-type-section">
+                                <button type="button" class="accordion-header" onclick="toggleAccordion('client-type')">
+                                    <div class="accordion-title">
+                                        <span class="accordion-icon">👤</span>
+                                        <span>Tip Client</span>
+                                    </div>
+                                    <svg class="accordion-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                        <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                                <div class="accordion-content" id="client-type-content">
+                                    <div class="client-type-selector">
+                                        <label class="radio-card">
+                                            <input type="radio" name="client-type" value="persoana-fizica" checked onchange="handleClientTypeChange()">
+                                            <div class="radio-card-content">
+                                                <div class="radio-icon">👤</div>
+                                                <div>
+                                                    <strong>Persoană Fizică</strong>
+                                                    <p>Cumpăr pentru uz personal</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="radio-card">
+                                            <input type="radio" name="client-type" value="persoana-juridica" onchange="handleClientTypeChange()">
+                                            <div class="radio-card-content">
+                                                <div class="radio-icon">🏢</div>
+                                                <div>
+                                                    <strong>Persoană Juridică</strong>
+                                                    <p>Cumpăr pentru companie</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Date Personale (Persoană Fizică) -->
+                            <div class="accordion-section" id="persoana-fizica-section">
+                                <button type="button" class="accordion-header" onclick="toggleAccordion('personal-data')">
+                                    <div class="accordion-title">
+                                        <span class="accordion-icon">📝</span>
+                                        <span>Date Personale</span>
+                                    </div>
+                                    <svg class="accordion-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                        <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                                <div class="accordion-content" id="personal-data-content">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="customer-name">Nume Complet *</label>
+                                            <input type="text" id="customer-name" required placeholder="Ion Popescu">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="customer-phone">Telefon *</label>
+                                            <input type="tel" id="customer-phone" required placeholder="+40 7XX XXX XXX">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="customer-email">Email *</label>
+                                        <input type="email" id="customer-email" required placeholder="exemplu@email.ro">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Date Companie (Persoană Juridică) -->
+                            <div class="accordion-section" id="persoana-juridica-section" style="display: none;">
+                                <button type="button" class="accordion-header" onclick="toggleAccordion('company-data')">
+                                    <div class="accordion-title">
+                                        <span class="accordion-icon">🏢</span>
+                                        <span>Date Companie</span>
+                                    </div>
+                                    <svg class="accordion-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                        <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                                <div class="accordion-content" id="company-data-content">
+                                    <div class="form-group">
+                                        <label for="company-name">Denumire Companie *</label>
+                                        <input type="text" id="company-name" placeholder="SC Compania SRL">
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="company-cui">CUI *</label>
+                                            <input type="text" id="company-cui" placeholder="RO12345678">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="company-reg">Nr. Reg. Com. *</label>
+                                            <input type="text" id="company-reg" placeholder="J12/1234/2020">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="company-contact-name">Persoană Contact *</label>
+                                            <input type="text" id="company-contact-name" placeholder="Ion Popescu">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="company-phone">Telefon *</label>
+                                            <input type="tel" id="company-phone" placeholder="+40 7XX XXX XXX">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="company-email">Email *</label>
+                                        <input type="email" id="company-email" placeholder="contact@companie.ro">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Date Livrare -->
+                            <div class="accordion-section">
+                                <button type="button" class="accordion-header" onclick="toggleAccordion('shipping-data')">
+                                    <div class="accordion-title">
+                                        <span class="accordion-icon">📦</span>
+                                        <span>Date Livrare</span>
+                                    </div>
+                                    <svg class="accordion-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                        <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                                <div class="accordion-content" id="shipping-data-content">
+                                    <div class="form-group">
+                                        <label for="customer-address">Adresă Completă *</label>
+                                        <input type="text" id="customer-address" required placeholder="Str. Exemplu, Nr. 10, Bl. A, Ap. 5">
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="customer-city">Oraș *</label>
+                                            <input type="text" id="customer-city" required placeholder="Cluj-Napoca">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="customer-county">Județ *</label>
+                                            <input type="text" id="customer-county" required placeholder="Cluj">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="customer-postal">Cod Poștal</label>
+                                        <input type="text" id="customer-postal" placeholder="400001">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="customer-notes">Notițe pentru Livrare (opțional)</label>
+                                        <textarea id="customer-notes" rows="3" placeholder="Ex: Sunați înainte de livrare, interfon nefuncțional, etc."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Sumar Comandă -->
+                <div class="order-summary" id="order-summary">
+                    <!-- Se încarcă dinamic -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div style="background: var(--bg-darker); padding: 2rem 0; border-bottom: 1px solid var(--border); margin-top: 3rem; margin-bottom: 4rem;">
+            <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+                <div style="display: flex; justify-content: center; align-items: center; gap: 2rem; flex-wrap: wrap;">
+                    
+    
+                    <a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener">
+                        <img src="static/images/anpc-sal.png"
+                             alt="ANPC SAL"
+                             width="250"
+                             height="50">
+                    </a>
+                    <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">
+                        <img src="static/images/sol-odr.png"
+                             alt="SOL ODR"
+                             width="250"
+                             height="50">
+                    </a>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="color: var(--text-secondary); font-size: 0.9rem;">
+                            Plată securizată:
+                        </span>
+                        <script src="https://mny.ro/npId.js?p=159762"
+                                type="text/javascript"
+                                data-version="vertical"
+                                data-contrast-color="#ffffff"></script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>TechLab</h4>
+                <p>Partenerul tău pentru fabricație digitală și componente premium.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Link-uri Rapide</h4>
+                <ul>
+                    <li><a href="filamente.html">Filamente</a></li>
+                    <li><a href="componente.html">Componente</a></li>
+                    <li><a href="print3d.html">Print 3D</a></li>
+                    <li><a href="laser.html">Laser</a></li>
+                    <li><a href="anpc.html">ANPC</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="termeni-conditii.html">Termeni și Condiții</a></li>
+                    <li><a href="politica-confidentialitate.html">Politică Confidențialitate</a></li>
+                    <li><a href="politica-gdpr.html">GDPR</a></li>
+                    <li><a href="politica-livrare.html">Politică Livrare</a></li>
+                    <li><a href="politica-retur.html">Politică Retur</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <p>Email: contact@techlab.ro</p>
+                <p>Tel: +40 123 456 789</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 TechLab - TECHNEST PROTOTYPING S.R.L. (CUI: 52582106) | Dezvoltat de <a href="https://rzbdata.ro" target="_blank" style="color: var(--primary);">RZB Data</a></p>
+        </div>
+    </footer>
+
+    <a href="admin/login.html" class="admin-access-btn" title="Admin Panel">👤</a>
+
+    <!-- Scripts -->
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="static/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="static/config.js"></script>
+    <script src="static/supabase-service.js"></script>
+    <script src="static/checkout-service.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCheckoutPage();
+        });
+
+        function renderCheckoutPage() {
+            const cartItemsContainer = document.getElementById('cart-items');
+            const orderSummary = document.getElementById('order-summary');
+            const customerFormSection = document.getElementById('customer-form-section');
+            const cart = checkoutService.getCart();
+
+            // Verifică dacă coșul e gol
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = `
+                    <div class="empty-cart">
+                        <div class="empty-cart-icon">🛒</div>
+                        <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">Coșul tău este gol</h3>
+                        <p style="margin-bottom: 2rem;">Adaugă produse pentru a continua.</p>
+                        <a href="filamente.html" class="btn btn-primary">Explorează Produsele</a>
+                    </div>
+                `;
+                orderSummary.innerHTML = '';
+                customerFormSection.style.display = 'none';
+                return;
+            }
+
+            // Afișează formularul
+            customerFormSection.style.display = 'block';
+
+            // Renderează produsele
+            cartItemsContainer.innerHTML = cart.map(item => `
+                <div class="cart-item">
+                    <div class="cart-item-image">
+                        <img src="${item.image || 'https://via.placeholder.com/80'}" alt="${item.name}">
+                    </div>
+                    <div class="cart-item-details">
+                        <h4>${item.name}</h4>
+                        <p class="cart-item-price">${item.price.toFixed(2)} RON / buc</p>
+                    </div>
+                    <div class="cart-item-quantity">
+                        <button class="quantity-btn" onclick="updateQuantity('${item.id}', ${item.quantity - 1})">−</button>
+                        <input type="number" value="${item.quantity}" min="1" readonly>
+                        <button class="quantity-btn" onclick="updateQuantity('${item.id}', ${item.quantity + 1})">+</button>
+                    </div>
+                    <div class="cart-item-subtotal">
+                        ${(item.price * item.quantity).toFixed(2)} RON
+                    </div>
+                    <button class="cart-item-remove" onclick="removeItem('${item.id}')" title="Elimină">
+                        ✕
+                    </button>
+                </div>
+            `).join('');
+
+            // Renderează sumar
+            const subtotal = checkoutService.getCartTotal();
+            const shipping = 0; // Transport gratuit
+            const total = subtotal + shipping;
+
+            orderSummary.innerHTML = `
+                <h3>Sumar Comandă</h3>
+                <div class="summary-row">
+                    <span>Subtotal (${checkoutService.getCartCount()} produse):</span>
+                    <span>${subtotal.toFixed(2)} RON</span>
+                </div>
+                <div class="summary-row">
+                    <span>Transport:</span>
+                    <span style="color: var(--success);">GRATUIT</span>
+                </div>
+                <div class="summary-row summary-total">
+                    <span>Total de plată:</span>
+                    <span>${total.toFixed(2)} RON</span>
+                </div>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 1.5rem; padding: 1rem;" onclick="finalizeOrder()">
+                    <span style="font-size: 1.1rem;">Finalizează Comanda</span>
+                </button>
+                <p style="text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+                    Plata se face la livrare (cash) sau transfer bancar
+                </p>
+            `;
+        }
+
+        function updateQuantity(productId, newQuantity) {
+            if (newQuantity <= 0) {
+                if (confirm('Vrei să ștergi acest produs din coș?')) {
+                    checkoutService.removeFromCart(productId);
+                    renderCheckoutPage();
+                }
+            } else {
+                checkoutService.updateQuantity(productId, newQuantity);
+                renderCheckoutPage();
+            }
+        }
+
+        function removeItem(productId) {
+            if (confirm('Sigur vrei să ștergi acest produs din coș?')) {
+                checkoutService.removeFromCart(productId);
+                renderCheckoutPage();
+            }
+        }
+
+        // Toggle Accordion
+        function toggleAccordion(id) {
+            const section = document.getElementById(id + '-section') || event.target.closest('.accordion-section');
+            section.classList.toggle('active');
+        }
+
+        // Handle Client Type Change
+        function handleClientTypeChange() {
+            const clientType = document.querySelector('input[name="client-type"]:checked').value;
+            const fizicaSection = document.getElementById('persoana-fizica-section');
+            const juridicaSection = document.getElementById('persoana-juridica-section');
+            
+            if (clientType === 'persoana-fizica') {
+                fizicaSection.style.display = 'block';
+                juridicaSection.style.display = 'none';
+                
+                // Remove required from juridica fields
+                document.getElementById('company-name').removeAttribute('required');
+                document.getElementById('company-cui').removeAttribute('required');
+                document.getElementById('company-reg').removeAttribute('required');
+                document.getElementById('company-contact-name').removeAttribute('required');
+                document.getElementById('company-phone').removeAttribute('required');
+                document.getElementById('company-email').removeAttribute('required');
+                
+                // Add required to fizica fields
+                document.getElementById('customer-name').setAttribute('required', 'required');
+                document.getElementById('customer-phone').setAttribute('required', 'required');
+                document.getElementById('customer-email').setAttribute('required', 'required');
+            } else {
+                fizicaSection.style.display = 'none';
+                juridicaSection.style.display = 'block';
+                
+                // Remove required from fizica fields
+                document.getElementById('customer-name').removeAttribute('required');
+                document.getElementById('customer-phone').removeAttribute('required');
+                document.getElementById('customer-email').removeAttribute('required');
+                
+                // Add required to juridica fields
+                document.getElementById('company-name').setAttribute('required', 'required');
+                document.getElementById('company-cui').setAttribute('required', 'required');
+                document.getElementById('company-reg').setAttribute('required', 'required');
+                document.getElementById('company-contact-name').setAttribute('required', 'required');
+                document.getElementById('company-phone').setAttribute('required', 'required');
+                document.getElementById('company-email').setAttribute('required', 'required');
+            }
+        }
+
+        function finalizeOrder() {
+            const form = document.getElementById('checkout-form');
+            
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const clientType = document.querySelector('input[name="client-type"]:checked').value;
+            let customerData;
+
+            if (clientType === 'persoana-fizica') {
+                customerData = {
+                    clientType: 'persoana-fizica',
+                    name: document.getElementById('customer-name').value,
+                    email: document.getElementById('customer-email').value,
+                    phone: document.getElementById('customer-phone').value,
+                    address: document.getElementById('customer-address').value,
+                    city: document.getElementById('customer-city').value,
+                    county: document.getElementById('customer-county').value,
+                    postalCode: document.getElementById('customer-postal').value,
+                    notes: document.getElementById('customer-notes').value
+                };
+            } else {
+                customerData = {
+                    clientType: 'persoana-juridica',
+                    companyName: document.getElementById('company-name').value,
+                    cui: document.getElementById('company-cui').value,
+                    regCom: document.getElementById('company-reg').value,
+                    name: document.getElementById('company-contact-name').value,
+                    email: document.getElementById('company-email').value,
+                    phone: document.getElementById('company-phone').value,
+                    address: document.getElementById('customer-address').value,
+                    city: document.getElementById('customer-city').value,
+                    county: document.getElementById('customer-county').value,
+                    postalCode: document.getElementById('customer-postal').value,
+                    notes: document.getElementById('customer-notes').value
+                };
+            }
+
+            // Procesează comanda
+            checkoutService.processOrder(customerData).catch(error => {
+                alert('A apărut o eroare la procesarea comenzii. Te rugăm să încerci din nou sau contactează-ne telefonic.');
+                console.error(error);
+            });
+        }
+    </script>
+    <script src="static/cookie-banner.js"></script>
+</body>
+</html>

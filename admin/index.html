@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - TechLab</title>
+    <link rel="stylesheet" href="../static/styles.css">
+</head>
+<body>
+    <!-- Protection Script -->
+    <script>
+        if (sessionStorage.getItem('admin_logged_in') !== 'true') {
+            window.location.href = 'login.html';
+        }
+        
+        function logout() {
+            if (confirm('Sigur vrei să ieși din Admin Panel?')) {
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+
+    <div style="background: var(--bg-darker); min-height: 100vh;">
+        <div style="max-width: 1600px; margin: 0 auto; padding: 2rem;">
+            <!-- Header cu logout -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
+                <div>
+                    <h1 style="font-family: var(--font-display); font-size: 3rem; color: var(--primary); margin-bottom: 0.5rem;">
+                        📦 Admin Panel - TechLab
+                    </h1>
+                    <p style="color: var(--text-secondary); font-size: 1.2rem;">
+                        Gestionare Produse pe Categorii
+                    </p>
+                </div>
+                <div style="text-align: right;">
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                        👤 Conectat ca: <strong style="color: var(--primary);" id="admin-username">Admin</strong>
+                    </p>
+                    <button onclick="logout()" class="btn btn-secondary" style="background: var(--error);">
+                        🚪 Deconectare
+                    </button>
+                </div>
+            </div>
+
+            <script>
+                const username = sessionStorage.getItem('admin_username');
+                if (username) {
+                    document.getElementById('admin-username').textContent = username;
+                }
+            </script>
+
+            <div id="alert-container"></div>
+
+            <!-- Tabs pentru categorii -->
+            <div class="tabs">
+                <button class="tab" onclick="switchTab('comenzi')">📦 Comenzi</button>
+                <button class="tab active" onclick="switchTab('filamente')">🧵 Filamente</button>
+                <button class="tab" onclick="switchTab('componente')">⚡ Componente</button>
+                <button class="tab" onclick="switchTab('print3d')">🖨️ Print 3D</button>
+                <button class="tab" onclick="switchTab('laser')">✂️ Laser</button>
+            </div>
+
+            <!-- TAB COMENZI -->
+            <div id="comenzi-content" class="tab-content" style="display: none;">
+                <div style="margin-bottom: 2rem;">
+                    <h2 style="font-family: var(--font-display); color: var(--primary); font-size: 2rem; margin-bottom: 1rem;">
+                        📦 Comenzi
+                    </h2>
+                    
+                    <!-- Filtre -->
+                    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+                        <select id="filter-status" onchange="loadOrders()" style="padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);">
+                            <option value="">Toate statusurile</option>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                        
+                        <select id="filter-payment" onchange="loadOrders()" style="padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);">
+                            <option value="">Toate plățile</option>
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                        
+                        <select id="filter-client-type" onchange="loadOrders()" style="padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);">
+                            <option value="">Toate tipurile</option>
+                            <option value="persoana-fizica">Persoană Fizică</option>
+                            <option value="persoana-juridica">Persoană Juridică</option>
+                        </select>
+                        
+                        <button onclick="loadOrders()" class="btn btn-secondary">
+                            🔄 Refresh
+                        </button>
+                    </div>
+
+                    <!-- Statistici rapide -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">Total Comenzi</div>
+                            <div style="font-family: var(--font-display); font-size: 2rem; color: var(--primary);" id="stat-total">0</div>
+                        </div>
+                        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">Vânzări Totale</div>
+                            <div style="font-family: var(--font-display); font-size: 2rem; color: var(--success);" id="stat-revenue">0 RON</div>
+                        </div>
+                        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">Pending</div>
+                            <div style="font-family: var(--font-display); font-size: 2rem; color: var(--warning);" id="stat-pending">0</div>
+                        </div>
+                        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">Delivered</div>
+                            <div style="font-family: var(--font-display); font-size: 2rem; color: var(--success);" id="stat-delivered">0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="orders-list"></div>
+            </div>
+
+            <!-- Content pentru fiecare categorie -->
+            <div id="filamente-content" class="tab-content active-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2 style="font-family: var(--font-display); color: var(--primary); font-size: 2rem;">
+                        Produse - Filamente
+                    </h2>
+                    <button class="btn btn-primary" onclick="openAddProductModal('filamente')">
+                        + Adaugă Produs Filament
+                    </button>
+                </div>
+                <div id="filamente-products-list"></div>
+            </div>
+
+            <div id="componente-content" class="tab-content" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2 style="font-family: var(--font-display); color: var(--primary); font-size: 2rem;">
+                        Produse - Componente
+                    </h2>
+                    <button class="btn btn-primary" onclick="openAddProductModal('componente')">
+                        + Adaugă Produs Component
+                    </button>
+                </div>
+                <div id="componente-products-list"></div>
+            </div>
+
+            <div id="print3d-content" class="tab-content" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2 style="font-family: var(--font-display); color: var(--primary); font-size: 2rem;">
+                        Produse - Print 3D
+                    </h2>
+                    <button class="btn btn-primary" onclick="openAddProductModal('print3d')">
+                        + Adaugă Produs Print 3D
+                    </button>
+                </div>
+                <div id="print3d-products-list"></div>
+            </div>
+
+            <div id="laser-content" class="tab-content" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2 style="font-family: var(--font-display); color: var(--primary); font-size: 2rem;">
+                        Produse - Laser
+                    </h2>
+                    <button class="btn btn-primary" onclick="openAddProductModal('laser')">
+                        + Adaugă Produs Laser
+                    </button>
+                </div>
+                <div id="laser-products-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Add/Edit Product -->
+    <div class="modal" id="product-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="product-modal-title">Adaugă Produs</h2>
+                <button class="close-btn" onclick="closeProductModal()">&times;</button>
+            </div>
+            <form id="product-form">
+                <input type="hidden" id="product-id">
+                <input type="hidden" id="product-category-slug">
+                
+                <div class="form-group">
+                    <label>Nume Produs *</label>
+                    <input type="text" id="product-name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Descriere</label>
+                    <textarea id="product-description" rows="3"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Preț (RON) *</label>
+                        <input type="number" id="product-price" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Preț Redus (RON)</label>
+                        <input type="number" id="product-sale-price" step="0.01">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Stoc *</label>
+                        <input type="number" id="product-stock" required>
+                    </div>
+                    <div class="form-group">
+                        <label>SKU</label>
+                        <input type="text" id="product-sku">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>URL Imagine (sau mai multe, separate prin virgulă)</label>
+                    <textarea id="product-images" rows="2" placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="product-active" checked>
+                            Produs Activ
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="product-featured">
+                            Produs Recomandat
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Anulează</button>
+                    <button type="submit" class="btn btn-primary">Salvează</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../static/config.js"></script>
+    <script src="../static/supabase-service.js"></script>
+
+    <script>
+        // Supabase client cu service role key
+        const supabaseAdmin = supabase.createClient(
+            SUPABASE_CONFIG.url,
+            SUPABASE_CONFIG.serviceRoleKey
+        );
+
+        let currentTab = 'filamente';
+        let categories = {};
+
+        // Încărcare inițială
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadCategories();
+            await loadAllProducts();
+        });
+
+        // Încarcă categoriile
+        async function loadCategories() {
+            try {
+                const { data, error } = await supabaseAdmin
+                    .from('categories')
+                    .select('*');
+                
+                if (error) throw error;
+                
+                // Stochează categoriile indexate după slug
+                data.forEach(cat => {
+                    categories[cat.slug || cat.name.toLowerCase()] = cat;
+                });
+            } catch (error) {
+                console.error('Eroare la încărcarea categoriilor:', error);
+            }
+        }
+
+        // Încarcă toate produsele pentru toate categoriile
+        async function loadAllProducts() {
+            await loadProductsForCategory('filamente');
+            await loadProductsForCategory('componente');
+            await loadProductsForCategory('print3d');
+            await loadProductsForCategory('laser');
+        }
+
+        // Încarcă produsele pentru o categorie
+        async function loadProductsForCategory(categorySlug) {
+            const category = categories[categorySlug];
+            if (!category) {
+                console.warn(`Categoria ${categorySlug} nu există în baza de date`);
+                document.getElementById(`${categorySlug}-products-list`).innerHTML = 
+                    `<p style="color: var(--error);">⚠️ Categoria "${categorySlug}" nu a fost găsită. Adaugă-o în baza de date.</p>`;
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseAdmin
+                    .from('products')
+                    .select('*')
+                    .eq('category_id', category.id)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                renderProducts(categorySlug, data || []);
+            } catch (error) {
+                console.error(`Eroare la încărcarea produselor ${categorySlug}:`, error);
+            }
+        }
+
+        // Renderează produsele
+        function renderProducts(categorySlug, products) {
+            const container = document.getElementById(`${categorySlug}-products-list`);
+            
+            if (products.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary);">Nu există produse în această categorie.</p>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Imagine</th><th>Nume</th><th>Preț</th><th>Stoc</th><th>Status</th><th>Acțiuni</th></tr></thead><tbody>';
+            
+            products.forEach(product => {
+                const imageUrl = product.images && product.images.length > 0 ? product.images[0] : '';
+                const statusBadge = product.is_active ? '<span class="badge-active">Activ</span>' : '<span class="badge-inactive">Inactiv</span>';
+                
+                html += `
+                    <tr>
+                        <td><img src="${imageUrl || 'https://via.placeholder.com/60'}" alt="${product.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"></td>
+                        <td><strong>${product.name}</strong></td>
+                        <td>${product.price} RON</td>
+                        <td>${product.stock}</td>
+                        <td>${statusBadge}</td>
+                        <td class="actions">
+                            <button class="btn btn-small" onclick="editProduct('${categorySlug}', '${product.id}')">Editează</button>
+                            <button class="btn btn-small btn-secondary" onclick="deleteProduct('${categorySlug}', '${product.id}')">Șterge</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Switch între tabs
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tab}-content`).style.display = 'block';
+        }
+
+        // Deschide modal pentru adăugare produs
+        function openAddProductModal(categorySlug) {
+            document.getElementById('product-modal-title').textContent = 'Adaugă Produs';
+            document.getElementById('product-form').reset();
+            document.getElementById('product-id').value = '';
+            document.getElementById('product-category-slug').value = categorySlug;
+            document.getElementById('product-modal').style.display = 'flex';
+        }
+
+        // Editează produs
+        async function editProduct(categorySlug, productId) {
+            try {
+                const { data, error } = await supabaseAdmin
+                    .from('products')
+                    .select('*')
+                    .eq('id', productId)
+                    .single();
+                
+                if (error) throw error;
+                
+                document.getElementById('product-modal-title').textContent = 'Editează Produs';
+                document.getElementById('product-id').value = data.id;
+                document.getElementById('product-category-slug').value = categorySlug;
+                document.getElementById('product-name').value = data.name;
+                document.getElementById('product-description').value = data.description || '';
+                document.getElementById('product-price').value = data.price;
+                document.getElementById('product-sale-price').value = data.sale_price || '';
+                document.getElementById('product-stock').value = data.stock;
+                document.getElementById('product-sku').value = data.sku || '';
+                document.getElementById('product-images').value = (data.images || []).join(', ');
+                document.getElementById('product-active').checked = data.is_active;
+                document.getElementById('product-featured').checked = data.featured;
+                
+                document.getElementById('product-modal').style.display = 'flex';
+            } catch (error) {
+                alert('Eroare la încărcarea produsului: ' + error.message);
+            }
+        }
+
+        // Șterge produs
+        async function deleteProduct(categorySlug, productId) {
+            if (!confirm('Sigur vrei să ștergi acest produs?')) return;
+            
+            try {
+                const { error } = await supabaseAdmin
+                    .from('products')
+                    .delete()
+                    .eq('id', productId);
+                
+                if (error) throw error;
+                
+                alert('Produs șters cu succes!');
+                await loadProductsForCategory(categorySlug);
+            } catch (error) {
+                alert('Eroare la ștergerea produsului: ' + error.message);
+            }
+        }
+
+        // Închide modal
+        function closeProductModal() {
+            document.getElementById('product-modal').style.display = 'none';
+        }
+
+        // Salvează produs
+        document.getElementById('product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const productId = document.getElementById('product-id').value;
+            const categorySlug = document.getElementById('product-category-slug').value;
+            const category = categories[categorySlug];
+            
+            if (!category) {
+                alert('Categoria nu a fost găsită!');
+                return;
+            }
+            
+            const imagesText = document.getElementById('product-images').value;
+            const images = imagesText ? imagesText.split(',').map(url => url.trim()).filter(url => url) : [];
+            
+            const productData = {
+                name: document.getElementById('product-name').value,
+                description: document.getElementById('product-description').value,
+                price: parseFloat(document.getElementById('product-price').value),
+                sale_price: document.getElementById('product-sale-price').value ? parseFloat(document.getElementById('product-sale-price').value) : null,
+                stock: parseInt(document.getElementById('product-stock').value),
+                sku: document.getElementById('product-sku').value,
+                images: images,
+                is_active: document.getElementById('product-active').checked,
+                featured: document.getElementById('product-featured').checked,
+                category_id: category.id
+            };
+            
+            try {
+                if (productId) {
+                    // Update
+                    const { error } = await supabaseAdmin
+                        .from('products')
+                        .update(productData)
+                        .eq('id', productId);
+                    
+                    if (error) throw error;
+                    alert('Produs actualizat cu succes!');
+                } else {
+                    // Insert
+                    const { error } = await supabaseAdmin
+                        .from('products')
+                        .insert([productData]);
+                    
+                    if (error) throw error;
+                    alert('Produs adăugat cu succes!');
+                }
+                
+                closeProductModal();
+                await loadProductsForCategory(categorySlug);
+            } catch (error) {
+                alert('Eroare la salvarea produsului: ' + error.message);
+            }
+        });
+
+        // ========================================
+        // FUNCȚII PENTRU COMENZI
+        // ========================================
+
+        async function loadOrders() {
+            const ordersList = document.getElementById('orders-list');
+            ordersList.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-secondary);">Se încarcă comenzile...</p>';
+
+            try {
+                // Obține filtre
+                const statusFilter = document.getElementById('filter-status').value;
+                const paymentFilter = document.getElementById('filter-payment').value;
+                const clientTypeFilter = document.getElementById('filter-client-type').value;
+
+                // Query comenzi
+                let query = supabaseAdmin
+                    .from('orders')
+                    .select(`
+                        *,
+                        order_items (
+                            *,
+                            products (
+                                name,
+                                images
+                            )
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+
+                // Aplică filtre
+                if (statusFilter) query = query.eq('status', statusFilter);
+                if (paymentFilter) query = query.eq('payment_status', paymentFilter);
+                if (clientTypeFilter) query = query.eq('client_type', clientTypeFilter);
+
+                const { data: orders, error } = await query;
+
+                if (error) throw error;
+
+                // Calculează statistici
+                updateOrderStats(orders);
+
+                if (!orders || orders.length === 0) {
+                    ordersList.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-secondary);">Nu există comenzi.</p>';
+                    return;
+                }
+
+                // Renderează comenzi
+                ordersList.innerHTML = orders.map(order => `
+                    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem;">
+                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 2rem; align-items: start;">
+                            <!-- Info comandă -->
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                    <h3 style="font-family: var(--font-display); color: var(--primary); font-size: 1.3rem; margin: 0;">
+                                        📦 ${order.order_number}
+                                    </h3>
+                                    <span style="padding: 0.25rem 0.75rem; background: ${getStatusColor(order.status)}; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                                        ${order.status}
+                                    </span>
+                                    <span style="padding: 0.25rem 0.75rem; background: ${getPaymentColor(order.payment_status)}; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                                        ${order.payment_status}
+                                    </span>
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                                    <div>
+                                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Client:</div>
+                                        <div style="color: var(--text-primary); font-weight: 600;">
+                                            ${order.client_type === 'persoana-juridica' ? '🏢' : '👤'} ${order.customer_name}
+                                        </div>
+                                        ${order.company_name ? `<div style="color: var(--text-secondary); font-size: 0.9rem;">${order.company_name}</div>` : ''}
+                                    </div>
+                                    
+                                    <div>
+                                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Contact:</div>
+                                        <div style="color: var(--text-primary);">📧 ${order.customer_email}</div>
+                                        <div style="color: var(--text-primary);">📞 ${order.customer_phone || 'N/A'}</div>
+                                    </div>
+                                    
+                                    <div>
+                                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Total:</div>
+                                        <div style="font-family: var(--font-display); color: var(--success); font-size: 1.5rem; font-weight: 700;">
+                                            ${parseFloat(order.total_amount).toFixed(2)} RON
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Data:</div>
+                                        <div style="color: var(--text-primary);">
+                                            ${new Date(order.created_at).toLocaleDateString('ro-RO', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Produse -->
+                                <div style="margin-top: 1rem;">
+                                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.5rem;">Produse (${order.order_items.length}):</div>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                        ${order.order_items.map(item => `
+                                            <span style="padding: 0.5rem 0.75rem; background: var(--bg-darker); border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem;">
+                                                ${item.product_name} x${item.quantity}
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Acțiuni -->
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 150px;">
+                                <button onclick="viewOrderDetails('${order.id}')" class="btn btn-secondary" style="width: 100%; font-size: 0.9rem;">
+                                    👁️ Vezi Detalii
+                                </button>
+                                <select onchange="updateOrderStatus('${order.id}', this.value)" style="padding: 0.5rem; background: var(--bg-darker); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.9rem;">
+                                    <option value="">Schimbă Status</option>
+                                    <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Processing</option>
+                                    <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Shipped</option>
+                                    <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                                    <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                                </select>
+                                <select onchange="updatePaymentStatus('${order.id}', this.value)" style="padding: 0.5rem; background: var(--bg-darker); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.9rem;">
+                                    <option value="">Plată Status</option>
+                                    <option value="pending" ${order.payment_status === 'pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="paid" ${order.payment_status === 'paid' ? 'selected' : ''}>Paid</option>
+                                    <option value="failed" ${order.payment_status === 'failed' ? 'selected' : ''}>Failed</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                ordersList.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--error);">Eroare la încărcarea comenzilor.</p>';
+            }
+        }
+
+        function updateOrderStats(orders) {
+            const total = orders.length;
+            const revenue = orders.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0);
+            const pending = orders.filter(o => o.status === 'pending').length;
+            const delivered = orders.filter(o => o.status === 'delivered').length;
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-revenue').textContent = revenue.toFixed(2) + ' RON';
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-delivered').textContent = delivered;
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'pending': 'rgba(255, 193, 7, 0.2)',
+                'processing': 'rgba(33, 150, 243, 0.2)',
+                'shipped': 'rgba(156, 39, 176, 0.2)',
+                'delivered': 'rgba(76, 175, 80, 0.2)',
+                'cancelled': 'rgba(244, 67, 54, 0.2)'
+            };
+            return colors[status] || 'rgba(158, 158, 158, 0.2)';
+        }
+
+        function getPaymentColor(status) {
+            const colors = {
+                'pending': 'rgba(255, 193, 7, 0.2)',
+                'paid': 'rgba(76, 175, 80, 0.2)',
+                'failed': 'rgba(244, 67, 54, 0.2)'
+            };
+            return colors[status] || 'rgba(158, 158, 158, 0.2)';
+        }
+
+        async function updateOrderStatus(orderId, newStatus) {
+            if (!newStatus) return;
+            
+            if (confirm(`Sigur vrei să schimbi statusul comenzii la "${newStatus}"?`)) {
+                try {
+                    const { error } = await supabaseAdmin
+                        .from('orders')
+                        .update({ status: newStatus, updated_at: new Date().toISOString() })
+                        .eq('id', orderId);
+
+                    if (error) throw error;
+                    
+                    alert('Status actualizat cu succes!');
+                    await loadOrders();
+                } catch (error) {
+                    alert('Eroare: ' + error.message);
+                }
+            }
+        }
+
+        async function updatePaymentStatus(orderId, newStatus) {
+            if (!newStatus) return;
+            
+            if (confirm(`Sigur vrei să schimbi statusul plății la "${newStatus}"?`)) {
+                try {
+                    const { error } = await supabaseAdmin
+                        .from('orders')
+                        .update({ payment_status: newStatus, updated_at: new Date().toISOString() })
+                        .eq('id', orderId);
+
+                    if (error) throw error;
+                    
+                    alert('Status plată actualizat cu succes!');
+                    await loadOrders();
+                } catch (error) {
+                    alert('Eroare: ' + error.message);
+                }
+            }
+        }
+
+        async function viewOrderDetails(orderId) {
+            try {
+                const { data: order, error } = await supabaseAdmin
+                    .from('orders')
+                    .select(`
+                        *,
+                        order_items (
+                            *,
+                            products (
+                                name,
+                                images,
+                                sku
+                            )
+                        )
+                    `)
+                    .eq('id', orderId)
+                    .single();
+
+                if (error) throw error;
+
+                const shipping = order.shipping_address;
+                const details = `
+════════════════════════════════════
+📦 COMANDĂ: ${order.order_number}
+════════════════════════════════════
+
+👤 CLIENT:
+${order.client_type === 'persoana-juridica' ? '🏢 PERSOANĂ JURIDICĂ' : '👤 PERSOANĂ FIZICĂ'}
+Nume: ${order.customer_name}
+${order.company_name ? 'Companie: ' + order.company_name : ''}
+${order.company_cui ? 'CUI: ' + order.company_cui : ''}
+${order.company_reg_com ? 'Reg. Com.: ' + order.company_reg_com : ''}
+Email: ${order.customer_email}
+Telefon: ${order.customer_phone || 'N/A'}
+
+📍 ADRESĂ LIVRARE:
+${shipping.street || 'N/A'}
+${shipping.city || ''}, ${shipping.county || ''}
+Cod poștal: ${shipping.postal_code || 'N/A'}
+
+🛒 PRODUSE (${order.order_items.length}):
+${order.order_items.map(item => `  • ${item.product_name} x${item.quantity} = ${parseFloat(item.subtotal).toFixed(2)} RON`).join('\n')}
+
+💰 TOTAL: ${parseFloat(order.total_amount).toFixed(2)} RON
+🚚 Transport: ${parseFloat(order.shipping_cost || 0).toFixed(2)} RON
+
+📊 STATUS:
+Comandă: ${order.status}
+Plată: ${order.payment_status}
+Metodă: ${order.payment_method}
+
+📅 DATA: ${new Date(order.created_at).toLocaleString('ro-RO')}
+
+${order.notes ? '📝 NOTIȚE:\n' + order.notes : ''}
+════════════════════════════════════
+                `;
+
+                alert(details);
+            } catch (error) {
+                alert('Eroare: ' + error.message);
+            }
+        }
+
+        // Actualizare funcție switchTab pentru a include comenzi
+        const originalSwitchTab = switchTab;
+        switchTab = function(tab) {
+            originalSwitchTab(tab);
+            if (tab === 'comenzi') {
+                loadOrders();
+            }
+        };
+    </script>
+<script src="static/cookie-banner.js"></script>
+</body>
+</html>
