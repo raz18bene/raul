@@ -280,16 +280,30 @@ class CheckoutService {
                 }
             }
 
-            // 7. Golește coșul
-            this.clearCart();
+            // 7. NU golește coșul aici - se va goli după plata cu succes în handleNetopiaCheckout
+            // this.clearCart(); // ← Mutăm asta după plată
 
-            // 8. Redirecționează către pagina de confirmare
-            window.location.href = `payment-return.html?order=${orderNumber}&success=true`;
-
+            // 8. RETURNEAZĂ order data pentru Netopia (NU face redirect!)
+            console.log('✅ Order created successfully, returning data for Netopia...');
+            
             return {
                 success: true,
                 orderId: order.id,
-                orderNumber: orderNumber
+                order_number: orderNumber, // ← IMPORTANT pentru Netopia!
+                customer_name: customerData.name,
+                customer_email: customerData.email,
+                customer_phone: customerData.phone,
+                total_amount: totalAmount,
+                shipping_address: customerData.address,
+                city: customerData.city,
+                county: customerData.county,
+                postal_code: customerData.postalCode,
+                items: this.cart.map(item => ({
+                    name: item.name,
+                    code: item.id,
+                    price: item.price,
+                    quantity: item.quantity
+                }))
             };
 
         } catch (error) {
