@@ -18,7 +18,7 @@
         </a>
     </div>
 
-                <!-- Navigation -->
+    <!-- Navigation -->
     <nav class="main-nav">
         <div class="nav-container">
             <ul class="nav-links">
@@ -30,11 +30,6 @@
                 <li><a href="contact.html" class="nav-link">Contact</a></li>
             </ul>
             
-            <a href="checkout.html" class="cart-icon">
-                🛒 Coș
-                <span class="cart-count">0</span>
-            </a>
-            
             <button class="hamburger" id="hamburger" aria-label="Menu">
                 <span></span>
                 <span></span>
@@ -42,6 +37,12 @@
             </button>
         </div>
     </nav>
+
+    <!-- Coș fixed în dreapta (CA BUTONUL ADMIN) -->
+    <a href="checkout.html" class="cart-icon">
+        🛒 Coș
+        <span class="cart-count">0</span>
+    </a>
 
     <!-- Main Content -->
     <main class="main-content">
@@ -161,36 +162,23 @@
         </section>
     </main>
 
+    <!-- Footer -->
     <footer class="footer">
         <div style="background: var(--bg-darker); padding: 2rem 0; border-bottom: 1px solid var(--border); margin-top: 3rem; margin-bottom: 4rem;">
             <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
                 <div style="display: flex; justify-content: center; align-items: center; gap: 2rem; flex-wrap: wrap;">
-                    
-    
                     <a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener">
-                        <img src="static/images/anpc-sal.png"
-                             alt="ANPC SAL"
-                             width="250"
-                             height="50">
+                        <img src="static/images/anpc-sal.png" alt="ANPC SAL" width="250" height="50">
                     </a>
                     <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">
-                        <img src="static/images/sol-odr.png"
-                             alt="SOL ODR"
-                             width="250"
-                             height="50">
+                        <img src="static/images/sol-odr.png" alt="SOL ODR" width="250" height="50">
                     </a>
                     <div style="display: flex; align-items: center; gap: 1rem;">
-                        <span style="color: var(--text-secondary); font-size: 0.9rem;">
-                            Plată securizată:
-                        </span>
-                        <script src="https://mny.ro/npId.js?p=159762"
-                                type="text/javascript"
-                                data-version="vertical"
-                                data-contrast-color="#ffffff"></script>
+                        <span style="color: var(--text-secondary); font-size: 0.9rem;">Plată securizată:</span>
+                        <script src="https://mny.ro/npId.js?p=159762" type="text/javascript" data-version="vertical" data-contrast-color="#ffffff"></script>
                     </div>
                 </div>
             </div>
-        </div>
         </div>
         <div class="footer-content">
             <div class="footer-section">
@@ -204,7 +192,6 @@
                     <li><a href="componente.html">Componente</a></li>
                     <li><a href="print3d.html">Print 3D</a></li>
                     <li><a href="laser.html">Laser</a></li>
-                    <li><a href="anpc.html">ANPC</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -227,7 +214,11 @@
             <p>&copy; 2026 TechLab - TECHNEST PROTOTYPING S.R.L. (CUI: 52582106) | Dezvoltat de <a href="https://rzbdata.ro" target="_blank" style="color: var(--primary);">RZB Data</a></p>
         </div>
     </footer>
+
+    <div class="nav-overlay" id="nav-overlay"></div>
+    
+    <script src="static/script.js"></script>
+    <script src="static/checkout-service.js"></script>
     <script src="static/cookie-banner.js"></script>
 </body>
 </html>
-    
