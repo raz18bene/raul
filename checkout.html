@@ -697,7 +697,7 @@
             </div>
             <div class="footer-section">
                 <h4>Contact</h4>
-                <p>Email: contact@techlab.ro</p>
+                <p>Email: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5c3f3332283d3f281c28393f34303d3e722e33">[email&#160;protected]</a></p>
                 <p>Tel: +40 123 456 789</p>
             </div>
         </div>
@@ -709,7 +709,7 @@
     <a href="admin/login.html" class="admin-access-btn" title="Admin Panel">👤</a>
 
     <!-- Scripts -->
-    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="static/script.js"></script>
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="static/script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="static/config.js"></script>
     <script src="static/supabase-service.js"></script>
@@ -862,7 +862,7 @@
             }
         }
 
-        function finalizeOrder() {
+        async function finalizeOrder() {
             const form = document.getElementById('checkout-form');
             
             if (!form.checkValidity()) {
@@ -902,13 +902,88 @@
                 };
             }
 
-            // Procesează comanda
-            checkoutService.processOrder(customerData).catch(error => {
-                alert('A apărut o eroare la procesarea comenzii. Te rugăm să încerci din nou sau contactează-ne telefonic.');
-                console.error(error);
-            });
+            // Procesează comanda și inițiază plata Netopia
+            try {
+                console.log('📝 Processing order...');
+                const orderResult = await checkoutService.processOrder(customerData);
+                console.log('✅ Order created:', orderResult);
+                
+                const cart = checkoutService.getCart();
+                const orderNumber = orderResult?.order_number || ('TL-' + Date.now());
+                
+                const orderData = {
+                    order_number: orderNumber,
+                    total_amount: checkoutService.getCartTotal(),
+                    customer_name: customerData.name,
+                    customer_email: customerData.email,
+                    customer_phone: customerData.phone,
+                    shipping_address: customerData.address,
+                    city: customerData.city || 'Timișoara',
+                    county: customerData.county || 'Timiș',
+                    postal_code: customerData.postalCode || '300000',
+                    items: cart.map(item => ({
+                        name: item.name,
+                        code: item.id,
+                        price: item.price,
+                        quantity: item.quantity,
+                    })),
+                };
+                
+                await handleNetopiaCheckout(orderData);
+            } catch (error) {
+                console.error('❌ Error:', error);
+                alert('A apărut o eroare la procesarea comenzii: ' + error.message);
+            }
         }
-    </script>
-    <script src="static/cookie-banner.js"></script>
-</body>
-</html>
+
+        async function handleNetopiaCheckout(orderData) {
+            try {
+                console.log('🚀 Starting Netopia payment...');
+                const submitBtn = document.querySelector('.btn-primary[onclick*="finalizeOrder"]');
+                const originalHTML = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span style="font-size: 1.1rem;">⏳ Se procesează plata...</span>';
+                submitBtn.disabled = true;
+
+                const paymentData = {
+                    orderNumber: orderData.order_number,
+                    total: parseFloat(orderData.total_amount),
+                    customerName: orderData.customer_name,
+                    customerEmail: orderData.customer_email,
+                    customerPhone: orderData.customer_phone,
+                    address: orderData.shipping_address,
+                    city: orderData.city,
+                    county: orderData.county,
+                    postalCode: orderData.postal_code,
+                    items: orderData.items,
+                    description: `Comanda TechLab #${orderData.order_number}`,
+                };
+
+                console.log('📤 Calling API...');
+                const response = await fetch('/api/netopia-start-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(paymentData),
+                });
+
+                const result = await response.json();
+                console.log('📥 Response:', result);
+
+                if (!response.ok || result.error) {
+                    throw new Error(result.error || 'Eroare la plată');
+                }
+
+                if (result.paymentUrl) {
+                    console.log('✅ Redirecting...');
+                    submitBtn.innerHTML = '<span>✅ Redirectare...</span>';
+                    checkoutService.clearCart();
+                    setTimeout(() => window.location.href = result.paymentUrl, 1500);
+                } else {
+                    throw new Error('Nu s-a primit URL de plată');
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                alert('Eroare la plată: ' + error.message);
+                document.querySelector('.btn-primary[onclick*="finalizeOrder"]').innerHTML = '<span style="font-size: 1.1rem;">Finalizează Comanda</span>';
+                document.querySelector('.btn-primary[onclick*="finalizeOrder"]').disabled = false;
+            }
+        }
