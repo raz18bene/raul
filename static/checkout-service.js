@@ -250,7 +250,7 @@ class CheckoutService {
                 total_amount: totalAmount,
                 status: 'pending',
                 payment_status: 'pending',
-                payment_method: 'manual', // Cash / Transfer bancar
+                payment_method: customerData.paymentMethod || 'cash', // Salvează metoda aleasă
                 notes: customerData.notes || ''
             };
 
