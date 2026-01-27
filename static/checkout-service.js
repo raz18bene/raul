@@ -209,7 +209,43 @@ class CheckoutService {
                     <span>Total:</span>
                     <span>${finalTotal.toFixed(2)} RON</span>
                 </div>
-                <button class="btn btn-primary btn-block" onclick="checkoutService.proceedToPayment()">
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid var(--border);">
+                    <h3 style="color: var(--primary); margin-bottom: 1rem; font-family: var(--font-display);">💳 Metodă Plată</h3>
+                    <div class="payment-methods">
+                        <label class="payment-method-option">
+                            <input type="radio" name="payment-method" value="card" checked>
+                            <div class="payment-method-card">
+                                <div class="payment-method-icon">💳</div>
+                                <div class="payment-method-details">
+                                    <strong>Card Online</strong>
+                                    <p>Securizat prin Netopia</p>
+                                    <div class="payment-badges"><span>🔒</span><span>Visa/MC</span></div>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="payment-method-option">
+                            <input type="radio" name="payment-method" value="transfer">
+                            <div class="payment-method-card">
+                                <div class="payment-method-icon">🏦</div>
+                                <div class="payment-method-details">
+                                    <strong>Transfer Bancar</strong>
+                                    <p>Detalii email</p>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="payment-method-option">
+                            <input type="radio" name="payment-method" value="cash">
+                            <div class="payment-method-card">
+                                <div class="payment-method-icon">💵</div>
+                                <div class="payment-method-details">
+                                    <strong>Numerar</strong>
+                                    <p>La livrare</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-block" onclick="checkoutService.proceedToPayment()" style="margin-top: 2rem;">
                     Finalizează Comanda
                 </button>
             `;
@@ -250,7 +286,7 @@ class CheckoutService {
                 total_amount: totalAmount,
                 status: 'pending',
                 payment_status: 'pending',
-                payment_method: customerData.paymentMethod || 'cash', // Salvează metoda aleasă
+                payment_method: customerData.paymentMethod || 'cash',
                 notes: customerData.notes || ''
             };
 
@@ -280,30 +316,13 @@ class CheckoutService {
                 }
             }
 
-            // 7. NU golește coșul aici - se va goli după plata cu succes în handleNetopiaCheckout
-            // this.clearCart(); // ← Mutăm asta după plată
+            // 7. NU golește coșul (se face după plată)
+            // 8. RETURNEAZĂ order data
 
-            // 8. RETURNEAZĂ order data pentru Netopia (NU face redirect!)
-            console.log('✅ Order created successfully, returning data for Netopia...');
-            
             return {
                 success: true,
                 orderId: order.id,
-                order_number: orderNumber, // ← IMPORTANT pentru Netopia!
-                customer_name: customerData.name,
-                customer_email: customerData.email,
-                customer_phone: customerData.phone,
-                total_amount: totalAmount,
-                shipping_address: customerData.address,
-                city: customerData.city,
-                county: customerData.county,
-                postal_code: customerData.postalCode,
-                items: this.cart.map(item => ({
-                    name: item.name,
-                    code: item.id,
-                    price: item.price,
-                    quantity: item.quantity
-                }))
+                orderNumber: orderNumber
             };
 
         } catch (error) {
@@ -312,8 +331,7 @@ class CheckoutService {
         }
     }
 
-    proceedToPayment() {
-        // Validează formularul
+    async proceedToPayment() {
         const form = document.getElementById('checkout-form');
         if (!form) return;
 
@@ -322,7 +340,12 @@ class CheckoutService {
             return;
         }
 
-        // Colectează datele
+        const paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value;
+        if (!paymentMethod) {
+            alert('Alege o metodă de plată!');
+            return;
+        }
+
         const customerData = {
             name: document.getElementById('customer-name')?.value,
             email: document.getElementById('customer-email')?.value,
@@ -331,14 +354,50 @@ class CheckoutService {
             city: document.getElementById('customer-city')?.value,
             county: document.getElementById('customer-county')?.value,
             postalCode: document.getElementById('customer-postal')?.value,
-            notes: document.getElementById('customer-notes')?.value
+            notes: document.getElementById('customer-notes')?.value,
+            paymentMethod: paymentMethod
         };
 
-        // Procesează comanda
-        this.processOrder(customerData).catch(error => {
-            alert('A apărut o eroare la procesarea comenzii. Te rugăm să încerci din nou.');
+        try {
+            const orderResult = await this.processOrder(customerData);
+            const cart = this.getCart();
+            const orderNumber = orderResult.order_number || orderResult.orderNumber;
+            const orderData = {
+                order_number: orderNumber,
+                total_amount: this.getCartTotal(),
+                customer_name: customerData.name,
+                customer_email: customerData.email,
+                customer_phone: customerData.phone,
+                shipping_address: customerData.address,
+                city: customerData.city,
+                county: customerData.county,
+                postal_code: customerData.postalCode,
+                payment_method: paymentMethod,
+                items: cart.map(item => ({
+                    name: item.name,
+                    code: item.id,
+                    price: item.price,
+                    quantity: item.quantity,
+                })),
+            };
+
+            if (paymentMethod === 'card') {
+                console.log('💳 Card → Netopia');
+                if (typeof handleNetopiaCheckout === 'function') {
+                    await handleNetopiaCheckout(orderData);
+                } else {
+                    console.error('handleNetopiaCheckout not found');
+                    alert('Eroare: funcția de plată nu este disponibilă');
+                }
+            } else {
+                console.log('💵 ' + paymentMethod);
+                this.clearCart();
+                window.location.href = 'payment-return.html?order=' + orderNumber + '&method=' + paymentMethod;
+            }
+        } catch (error) {
+            alert('Eroare la procesarea comenzii: ' + error.message);
             console.error(error);
-        });
+        }
     }
 
     // ========================================

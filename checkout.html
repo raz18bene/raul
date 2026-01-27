@@ -374,6 +374,64 @@
             margin: 0;
         }
         
+
+        /* ===== PAYMENT METHOD SELECTOR ===== */
+        .payment-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .payment-method-option {
+            cursor: pointer;
+        }
+        .payment-method-option input[type="radio"] {
+            display: none;
+        }
+        .payment-method-card {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: var(--bg-darker);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        .payment-method-option:hover .payment-method-card {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        .payment-method-option input[type="radio"]:checked + .payment-method-card {
+            border-color: var(--primary);
+            background: rgba(0, 217, 255, 0.05);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+        }
+        .payment-method-icon {
+            font-size: 2.5rem;
+            min-width: 60px;
+            text-align: center;
+        }
+        .payment-method-details strong {
+            display: block;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        .payment-method-details p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        .payment-badges {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
         @media (max-width: 1024px) {
             .client-type-selector {
                 grid-template-columns: 1fr;
@@ -407,102 +465,6 @@
             
             .form-row {
                 grid-template-columns: 1fr;
-            }
-        }
-
-        
-        /* ========================================
-           PAYMENT METHOD SELECTOR
-           ======================================== */
-        
-        .payment-methods {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-
-        .payment-method-option {
-            cursor: pointer;
-        }
-
-        .payment-method-option input[type="radio"] {
-            display: none;
-        }
-
-        .payment-method-card {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            padding: 1.5rem;
-            background: var(--bg-darker);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .payment-method-option:hover .payment-method-card {
-            border-color: var(--primary);
-            transform: translateY(-2px);
-        }
-
-        .payment-method-option input[type="radio"]:checked + .payment-method-card {
-            border-color: var(--primary);
-            background: rgba(0, 217, 255, 0.05);
-            box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
-        }
-
-        .payment-method-icon {
-            font-size: 2.5rem;
-            min-width: 60px;
-            text-align: center;
-        }
-
-        .payment-method-details strong {
-            display: block;
-            color: var(--text-primary);
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .payment-method-details p {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin: 0;
-        }
-
-        .payment-badges {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .payment-section {
-            margin-top: 2rem;
-            padding: 2rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-        }
-
-        .payment-section h3 {
-            color: var(--primary);
-            margin-bottom: 1rem;
-            font-family: var(--font-display);
-        }
-
-        @media (max-width: 768px) {
-            .payment-method-card {
-                flex-direction: column;
-                text-align: center;
-                gap: 1rem;
-            }
-            
-            .payment-method-icon {
-                font-size: 3rem;
             }
         }
     </style>
@@ -778,6 +740,7 @@
                     <li><a href="print3d.html">Print 3D</a></li>
                     <li><a href="laser.html">Laser</a></li>
                     <li><a href="anpc.html">ANPC</a></li>
+                    <li><a href="about.html">Despre Noi</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -788,12 +751,11 @@
                     <li><a href="politica-gdpr.html">GDPR</a></li>
                     <li><a href="politica-livrare.html">Politică Livrare</a></li>
                     <li><a href="politica-retur.html">Politică Retur</a></li>
-                    <li><a href="about.html">Despre Noi</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h4>Contact</h4>
-                <p>Email: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5c3f3332283d3f281c28393f34303d3e722e33">[email&#160;protected]</a></p>
+                <p>Email: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="61020e0f1500021521150402090d00034f130e">[email&#160;protected]</a></p>
                 <p>Tel: +40 123 456 789</p>
             </div>
         </div>
@@ -805,7 +767,7 @@
     <a href="admin/login.html" class="admin-access-btn" title="Admin Panel">👤</a>
 
     <!-- Scripts -->
-    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="static/script.js"></script>
+    <script src="static/script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="static/config.js"></script>
     <script src="static/supabase-service.js"></script>
@@ -883,54 +845,47 @@
                     <span>Total de plată:</span>
                     <span>${total.toFixed(2)} RON</span>
                 </div>
-                
-                <!-- SELECTOR METODĂ PLATĂ -->
                 <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid var(--border);">
-                    <h3 style="color: var(--primary); margin-bottom: 1rem; font-family: var(--font-display);">💳 Alege Metoda de Plată</h3>
+                    <h3 style="color: var(--primary); margin-bottom: 1rem; font-family: var(--font-display);">💳 Metodă Plată</h3>
                     <div class="payment-methods">
                         <label class="payment-method-option">
-                            <input type="radio" name="payment-method" value="card" id="payment-card" checked>
+                            <input type="radio" name="payment-method" value="card" checked>
                             <div class="payment-method-card">
                                 <div class="payment-method-icon">💳</div>
                                 <div class="payment-method-details">
-                                    <strong>Card Online (Recomandat)</strong>
-                                    <p>Plată securizată prin Netopia Payments</p>
-                                    <div class="payment-badges">
-                                        <span>🔒 Securizat</span>
-                                        <span>•</span>
-                                        <span>Visa / Mastercard</span>
-                                    </div>
+                                    <strong>Card Online</strong>
+                                    <p>Securizat Netopia</p>
+                                    <div class="payment-badges"><span>🔒 Visa/MC</span></div>
                                 </div>
                             </div>
                         </label>
                         <label class="payment-method-option">
-                            <input type="radio" name="payment-method" value="transfer" id="payment-transfer">
+                            <input type="radio" name="payment-method" value="transfer">
                             <div class="payment-method-card">
                                 <div class="payment-method-icon">🏦</div>
                                 <div class="payment-method-details">
                                     <strong>Transfer Bancar</strong>
-                                    <p>Vei primi detaliile bancare pe email</p>
+                                    <p>Detalii email</p>
                                 </div>
                             </div>
                         </label>
                         <label class="payment-method-option">
-                            <input type="radio" name="payment-method" value="cash" id="payment-cash">
+                            <input type="radio" name="payment-method" value="cash">
                             <div class="payment-method-card">
                                 <div class="payment-method-icon">💵</div>
                                 <div class="payment-method-details">
-                                    <strong>Numerar la Livrare</strong>
-                                    <p>Plătești curierului la primirea coletului</p>
+                                    <strong>Numerar</strong>
+                                    <p>La livrare</p>
                                 </div>
                             </div>
                         </label>
                     </div>
                 </div>
-                
                 <button class="btn btn-primary" style="width: 100%; margin-top: 2rem; padding: 1rem;" onclick="finalizeOrder()">
                     <span style="font-size: 1.1rem;">Finalizează Comanda</span>
                 </button>
                 <p style="text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
-                    Plata este 100% securizată
+                    Plata 100% securizată
                 </p>
             `;
         }
@@ -1001,23 +956,13 @@
             }
         }
 
-        async function finalizeOrder() {
+        function finalizeOrder() {
             const form = document.getElementById('checkout-form');
             
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
-
-            // VERIFICĂ METODA DE PLATĂ
-            const paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value;
-            
-            if (!paymentMethod) {
-                alert('Te rugăm să alegi o metodă de plată!');
-                return;
-            }
-            
-            console.log('💳 Payment method selected:', paymentMethod);
 
             const clientType = document.querySelector('input[name="client-type"]:checked').value;
             let customerData;
@@ -1032,8 +977,7 @@
                     city: document.getElementById('customer-city').value,
                     county: document.getElementById('customer-county').value,
                     postalCode: document.getElementById('customer-postal').value,
-                    notes: document.getElementById('customer-notes').value,
-                    paymentMethod: paymentMethod
+                    notes: document.getElementById('customer-notes').value
                 };
             } else {
                 customerData = {
@@ -1048,65 +992,61 @@
                     city: document.getElementById('customer-city').value,
                     county: document.getElementById('customer-county').value,
                     postalCode: document.getElementById('customer-postal').value,
-                    notes: document.getElementById('customer-notes').value,
-                    paymentMethod: paymentMethod
+                    notes: document.getElementById('customer-notes').value
                 };
             }
 
-            // Procesează comanda
-            try {
-                console.log('📝 Processing order...');
-                const orderResult = await checkoutService.processOrder(customerData);
-                console.log('✅ Order created:', orderResult);
-                
-                const cart = checkoutService.getCart();
-                const orderNumber = orderResult?.order_number || ('TL-' + Date.now());
-                
-                const orderData = {
-                    order_number: orderNumber,
-                    total_amount: checkoutService.getCartTotal(),
-                    customer_name: customerData.name,
-                    customer_email: customerData.email,
-                    customer_phone: customerData.phone,
-                    shipping_address: customerData.address,
-                    city: customerData.city || 'Timișoara',
-                    county: customerData.county || 'Timiș',
-                    postal_code: customerData.postalCode || '300000',
-                    payment_method: paymentMethod,
-                    items: cart.map(item => ({
-                        name: item.name,
-                        code: item.id,
-                        price: item.price,
-                        quantity: item.quantity,
-                    })),
-                };
-                
-                // RUTĂ DIFERITĂ PENTRU FIECARE METODĂ
-                if (paymentMethod === 'card') {
-                    console.log('💳 Card → Netopia');
-                    await handleNetopiaCheckout(orderData);
-                } else if (paymentMethod === 'transfer') {
-                    console.log('🏦 Transfer → Instructions');
-                    checkoutService.clearCart();
-                    window.location.href = `payment-return.html?order=${orderNumber}&method=transfer`;
-                } else if (paymentMethod === 'cash') {
-                    console.log('💵 Cash → Confirmation');
-                    checkoutService.clearCart();
-                    window.location.href = `payment-return.html?order=${orderNumber}&method=cash`;
-                }
-            } catch (error) {
-                console.error('❌ Error:', error);
-                alert('A apărut o eroare la procesarea comenzii: ' + error.message);
+            // Procesează comanda cu payment routing
+            const paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value;
+            if (!paymentMethod) {
+                alert('Alege metodă de plată!');
+                return;
             }
+            customerData.paymentMethod = paymentMethod;
+            
+            checkoutService.processOrder(customerData)
+                .then(orderResult => {
+                    const cart = checkoutService.getCart();
+                    const orderNumber = orderResult?.order_number || ('ORD-' + Date.now());
+                    const orderData = {
+                        order_number: orderNumber,
+                        total_amount: checkoutService.getCartTotal(),
+                        customer_name: customerData.name,
+                        customer_email: customerData.email,
+                        customer_phone: customerData.phone,
+                        shipping_address: customerData.address,
+                        city: customerData.city,
+                        county: customerData.county,
+                        postal_code: customerData.postalCode,
+                        payment_method: paymentMethod,
+                        items: cart.map(item => ({
+                            name: item.name,
+                            code: item.id,
+                            price: item.price,
+                            quantity: item.quantity,
+                        })),
+                    };
+                    
+                    if (paymentMethod === 'card' && typeof handleNetopiaCheckout === 'function') {
+                        return handleNetopiaCheckout(orderData);
+                    } else if (paymentMethod !== 'card') {
+                        checkoutService.clearCart();
+                        window.location.href = 'payment-return.html?order=' + orderNumber + '&method=' + paymentMethod;
+                    }
+                })
+                .catch(error => {
+                    alert('A apărut o eroare la procesarea comenzii: ' + error.message);
+                });
         }
 
         async function handleNetopiaCheckout(orderData) {
             try {
-                console.log('🚀 Starting Netopia payment...');
-                const submitBtn = document.querySelector('.btn-primary[onclick*="finalizeOrder"]');
-                const originalHTML = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<span style="font-size: 1.1rem;">⏳ Se procesează plata...</span>';
-                submitBtn.disabled = true;
+                console.log('🚀 Netopia payment starting...');
+                const submitBtn = document.querySelector('.btn-primary');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<span style="font-size: 1.1rem;">⏳ Procesare plată...</span>';
+                    submitBtn.disabled = true;
+                }
 
                 const paymentData = {
                     orderNumber: orderData.order_number,
@@ -1119,10 +1059,10 @@
                     county: orderData.county,
                     postalCode: orderData.postal_code,
                     items: orderData.items,
-                    description: `Comanda TechLab #${orderData.order_number}`,
+                    description: 'Comanda TechLab #' + orderData.order_number,
                 };
 
-                console.log('📤 Calling API...');
+                console.log('📤 Calling Netopia API...');
                 const response = await fetch('/api/netopia-start-payment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1130,24 +1070,32 @@
                 });
 
                 const result = await response.json();
-                console.log('📥 Response:', result);
+                console.log('📥 API Response:', result);
 
                 if (!response.ok || result.error) {
-                    throw new Error(result.error || 'Eroare la plată');
+                    throw new Error(result.error || 'Eroare la inițiere plată');
                 }
 
                 if (result.paymentUrl) {
-                    console.log('✅ Redirecting...');
-                    submitBtn.innerHTML = '<span>✅ Redirectare...</span>';
+                    console.log('✅ Redirecting to Netopia...');
+                    if (submitBtn) submitBtn.innerHTML = '<span style="font-size: 1.1rem;">✅ Redirectare...</span>';
                     checkoutService.clearCart();
-                    setTimeout(() => window.location.href = result.paymentUrl, 1500);
+                    setTimeout(() => {
+                        window.location.href = result.paymentUrl;
+                    }, 1500);
                 } else {
-                    throw new Error('Nu s-a primit URL de plată');
+                    throw new Error('URL plată lipsește');
                 }
             } catch (error) {
-                console.error('❌ Error:', error);
-                alert('Eroare la plată: ' + error.message);
-                document.querySelector('.btn-primary[onclick*="finalizeOrder"]').innerHTML = '<span style="font-size: 1.1rem;">Finalizează Comanda</span>';
-                document.querySelector('.btn-primary[onclick*="finalizeOrder"]').disabled = false;
+                console.error('❌ Netopia Error:', error);
+                alert('Eroare plată: ' + error.message);
+                const btn = document.querySelector('.btn-primary');
+                if (btn) {
+                    btn.innerHTML = '<span style="font-size: 1.1rem;">Finalizează Comanda</span>';
+                    btn.disabled = false;
+                }
             }
         }
+    </script>
+</body>
+</html>
