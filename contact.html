@@ -4,21 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact - TechLab</title>
+
     <link rel="stylesheet" href="static/styles.css">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Logo in top-left corner -->
+
+    <!-- Logo -->
     <div class="logo-corner">
-        <a href="index.html" style="text-decoration: none; color: inherit;">
+        <a href="index.html" style="text-decoration:none;color:inherit;">
             <div class="logo-text">TECH<span class="logo-accent">LAB</span></div>
             <div class="logo-subtitle">Digital Manufacturing</div>
         </a>
     </div>
 
-            <!-- Navigation -->
+    <!-- Navigation -->
     <nav class="main-nav">
         <div class="nav-container">
             <ul class="nav-links">
@@ -30,198 +33,165 @@
                 <li><a href="products.html?category=laser" class="nav-link">Laser</a></li>
                 <li><a href="contact.html" class="nav-link active">Contact</a></li>
             </ul>
-            
+
             <a href="checkout.html" class="cart-icon">
-                🛒 Coș
-                <span class="cart-count">0</span>
+                🛒 Coș <span class="cart-count">0</span>
             </a>
-            
+
             <button class="hamburger" id="hamburger" aria-label="Menu">
-                <span></span>
-                <span></span>
-                <span></span>
+                <span></span><span></span><span></span>
             </button>
         </div>
     </nav>
 
-    <!-- Main Content -->
+    <!-- Main -->
     <main class="main-content">
+
         <div class="page-header">
             <h1 class="page-title">Contact</h1>
             <p class="page-subtitle">Suntem aici să te ajutăm</p>
         </div>
 
         <div class="contact-grid">
+
+            <!-- INFO -->
             <div class="contact-info">
-                <h3>Informații Contact</h3>
+                <h3>Informații de contact</h3>
+
+                <!-- Adresa -->
                 <div class="contact-item">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.6 4 5.3 5.6 3.6C7.3 2 9.6 1 12 1C14.4 1 16.7 2 18.4 3.6C20 5.3 21 7.6 21 10Z" stroke="currentColor" stroke-width="2"/>
                         <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
                     </svg>
                     <div>
                         <strong>Adresă</strong>
-                        <p>Str. Exemplu Nr. 123<br>Cluj-Napoca, România</p>
+                        <p>
+                            Str. Măgura nr. 3<br>
+                            Timișoara, Timiș<br>
+                            300763, România
+                        </p>
                     </div>
                 </div>
+
+                <!-- Telefon -->
                 <div class="contact-item">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M22 16.92V19.92C22.0011 20.1985 21.9441 20.4742 21.8325 20.7293C21.7209 20.9845 21.5573 21.2136 21.3521 21.4019C21.1468 21.5901 20.9046 21.7335 20.6407 21.8227C20.3769 21.9119 20.0974 21.9451 19.82 21.92C16.7428 21.5856 13.787 20.5341 11.19 18.85C8.77382 17.3147 6.72533 15.2662 5.18999 12.85C3.49997 10.2412 2.44824 7.27099 2.11999 4.18C2.09501 3.90347 2.12788 3.62476 2.21649 3.36162C2.30511 3.09849 2.44756 2.85669 2.63476 2.65162C2.82196 2.44655 3.0498 2.28271 3.30379 2.17052C3.55777 2.05833 3.83233 2.00026 4.10999 2H7.10999C7.5953 1.99522 8.06579 2.16708 8.43376 2.48353C8.80173 2.79999 9.04207 3.23945 9.10999 3.72C9.23662 4.68007 9.47144 5.62273 9.80999 6.53C9.94454 6.88792 9.97366 7.27691 9.8939 7.65088C9.81415 8.02485 9.62886 8.36811 9.35999 8.64L8.08999 9.91C9.51355 12.4135 11.5864 14.4864 14.09 15.91L15.36 14.64C15.6319 14.3711 15.9751 14.1858 16.3491 14.1061C16.7231 14.0263 17.1121 14.0555 17.47 14.19C18.3773 14.5286 19.3199 14.7634 20.28 14.89C20.7658 14.9585 21.2094 15.2032 21.5265 15.5775C21.8437 15.9518 22.0122 16.4296 22 16.92Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M22 16.9V19.9C22 20.4 21.8 20.8 21.4 21.1C21 21.5 20.5 21.6 20 21.6C16.8 21.3 13.8 20.2 11.2 18.5C8.8 17 6.8 15 5.3 12.6C3.6 10 2.5 7 2.2 3.9C2.2 3.4 2.4 2.9 2.7 2.5C3 2.1 3.5 1.9 4 1.9H7.1C7.9 1.9 8.5 2.4 8.7 3.2L9.3 6.1C9.4 6.6 9.3 7.1 9 7.5L7.8 8.7C9.2 11.2 11.3 13.3 13.8 14.7L15 13.5C15.4 13.1 15.9 13 16.4 13.1L19.3 13.7C20.1 13.9 20.6 14.6 20.6 15.4Z" stroke="currentColor" stroke-width="2"/>
                     </svg>
                     <div>
                         <strong>Telefon</strong>
-                        <p>+40 123 456 789</p>
+                        <p>0754 545 800</p>
                     </div>
                 </div>
+
+                <!-- Email -->
                 <div class="contact-item">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M22 6L12 13L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M4 4H20C21 4 22 5 22 6V18C22 19 21 20 20 20H4C3 20 2 19 2 18V6C2 5 3 4 4 4Z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M22 6L12 13L2 6" stroke="currentColor" stroke-width="2"/>
                     </svg>
                     <div>
                         <strong>Email</strong>
-                        <p><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fc9f9392889d9f88bc88999f94909d9ed28e93">[email&#160;protected]</a></p>
+                        <p><a href="mailto:Tomaraul12@gmail.com">Tomaraul12@gmail.com</a></p>
                     </div>
                 </div>
+
+                <!-- Date firmă -->
                 <div class="contact-item">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M3 21H21M5 21V7L12 3L19 7V21" stroke="currentColor" stroke-width="2"/>
                     </svg>
                     <div>
-                        <strong>Program</strong>
-                        <p>Luni - Vineri: 09:00 - 18:00<br>Sâmbătă: 10:00 - 14:00</p>
+                        <strong>Date firmă</strong>
+                        <p>
+                            TECHNEST PROTOTYPING S.R.L.<br>
+                            CUI: 52582106<br>
+                            Reg. Com.: J2025073596003
+                        </p>
                     </div>
-                </div>
-
-                <div class="social-links">
-                    <a href="#" class="social-link">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                        </svg>
-                    </a>
-                    <a href="#" class="social-link">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                        </svg>
-                    </a>
-                    <a href="https://wa.me/40123456789" class="social-link social-whatsapp">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                        </svg>
-                    </a>
                 </div>
             </div>
 
+            <!-- FORM -->
             <div class="contact-form-section">
                 <h3>Trimite-ne un mesaj</h3>
-                <form class="contact-form" id="contact-form">
+
+                <form class="contact-form">
                     <div class="form-group">
-                        <label for="contact-name">Nume complet *</label>
-                        <input type="text" id="contact-name" required>
+                        <label>Nume complet *</label>
+                        <input type="text" required>
                     </div>
+
                     <div class="form-group">
-                        <label for="contact-email">Email *</label>
-                        <input type="email" id="contact-email" required>
+                        <label>Email *</label>
+                        <input type="email" required>
                     </div>
+
                     <div class="form-group">
-                        <label for="contact-phone">Telefon</label>
-                        <input type="tel" id="contact-phone">
+                        <label>Telefon</label>
+                        <input type="tel">
                     </div>
+
                     <div class="form-group">
-                        <label for="contact-subject">Subiect *</label>
-                        <select id="contact-subject" required>
-                            <option value="">Selectează subiect</option>
-                            <option value="filamente">Filamente</option>
-                            <option value="componente">Componente Electronice</option>
-                            <option value="print3d">Print 3D</option>
-                            <option value="laser">Gravare Laser</option>
-                            <option value="other">Altele</option>
+                        <label>Subiect *</label>
+                        <select required>
+                            <option value="">Selectează</option>
+                            <option>Filamente</option>
+                            <option>Componente</option>
+                            <option>Print 3D</option>
+                            <option>Laser</option>
+                            <option>Altele</option>
                         </select>
                     </div>
+
                     <div class="form-group">
-                        <label for="contact-message">Mesaj *</label>
-                        <textarea id="contact-message" rows="5" required></textarea>
+                        <label>Mesaj *</label>
+                        <textarea rows="5" required></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary">Trimite Mesaj</button>
+
+                    <button type="submit" class="btn btn-primary">Trimite mesaj</button>
                 </form>
             </div>
+
         </div>
     </main>
 
+    <!-- FOOTER -->
     <footer class="footer">
-        <div style="background: var(--bg-darker); padding: 2rem 0; border-bottom: 1px solid var(--border); margin-top: 3rem; margin-bottom: 4rem;">
-            <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
-                <div style="display: flex; justify-content: center; align-items: center; gap: 2rem; flex-wrap: wrap;">
-                    
-    
-                    <a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener">
-                        <img src="static/images/anpc-sal.png"
-                             alt="ANPC SAL"
-                             width="250"
-                             height="50">
-                    </a>
-                    <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">
-                        <img src="static/images/sol-odr.png"
-                             alt="SOL ODR"
-                             width="250"
-                             height="50">
-                    </a>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <span style="color: var(--text-secondary); font-size: 0.9rem;">
-                            Plată securizată:
-                        </span>
-                        <script src="https://mny.ro/npId.js?p=159762"
-                                type="text/javascript"
-                                data-version="vertical"
-                                data-contrast-color="#ffffff"></script>
-                    </div>
-                </div>
-            </div>
-        </div>
         <div class="footer-content">
             <div class="footer-section">
                 <h4>TechLab</h4>
-                <p>Partenerul tău pentru fabricație digitală și componente premium.</p>
+                <p>Fabricație digitală, print 3D și componente premium.</p>
             </div>
-            <div class="footer-section">
-                <h4>Link-uri Rapide</h4>
-                <ul>
-                    <li><a href="filamente.html">Filamente</a></li>
-                    <li><a href="componente.html">Componente</a></li>
-                    <li><a href="print3d.html">Print 3D</a></li>
-                    <li><a href="laser.html">Laser</a></li>
-                    <li><a href="anpc.html">ANPC</a></li>
-                </ul>
-            </div>
+
             <div class="footer-section">
                 <h4>Legal</h4>
                 <ul>
                     <li><a href="termeni-conditii.html">Termeni și Condiții</a></li>
                     <li><a href="politica-confidentialitate.html">Politică Confidențialitate</a></li>
-                    <li><a href="politica-gdpr.html">GDPR</a></li>
                     <li><a href="politica-livrare.html">Politică Livrare</a></li>
                     <li><a href="politica-retur.html">Politică Retur</a></li>
                 </ul>
             </div>
+
             <div class="footer-section">
                 <h4>Contact</h4>
-                <p>Email: contact@techlab.ro</p>
-                <p>Tel: +40 123 456 789</p>
+                <p>Email: <a href="mailto:Tomaraul12@gmail.com">Tomaraul12@gmail.com</a></p>
+                <p>Tel: 0754 545 800</p>
             </div>
         </div>
+
         <div class="footer-bottom">
-            <p>&copy; 2026 TechLab - TECHNEST PROTOTYPING S.R.L. (CUI: 52582106) | Dezvoltat de <a href="https://rzbdata.ro" target="_blank" style="color: var(--primary);">RZB Data</a></p>
+            <p>
+                © 2026 TECHNEST PROTOTYPING S.R.L. |
+                CUI 52582106 |
+                J2025073596003 |
+                Timișoara, România
+            </p>
         </div>
     </footer>
 
-    <a href="admin/login.html" class="admin-access-btn" title="Admin Panel">👤</a>
-    <div class="nav-overlay" id="nav-overlay"></div>
-
     <script src="static/script.js"></script>
-    <script src="static/checkout-service.js"></script>
-    <script src="static/cookie-banner.js"></script>
 </body>
 </html>
-            
