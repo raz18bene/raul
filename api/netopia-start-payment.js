@@ -1,98 +1,15 @@
 // api/netopia-start-payment.js
-// Vercel Serverless Function pentru inițiere plată Netopia
+// Vercel Serverless Function - ESM version
 
-const crypto = require('crypto');
-
-// ⚠️ IMPORTANT: Pune aceste valori în Vercel Environment Variables!
-const NETOPIA_CONFIG = {
-    signature: process.env.NETOPIA_SIGNATURE || '38QU-P3JY-21TG-M2ZF-C1YF',
-    apiUrl: 'https://secure.netopia-payments.com',
-    notifyUrl: '', // Va fi setat dinamic
-    redirectUrl: '', // Va fi setat dinamic
-};
-
-// Funcție pentru generare token Netopia
-function generateNeotopiaPaymentData(order) {
-    const paymentData = {
-        config: {
-            emailTemplate: 'confirm',
-            notifyUrl: NETOPIA_CONFIG.notifyUrl,
-            redirectUrl: NETOPIA_CONFIG.redirectUrl,
-            language: 'ro',
-        },
-        payment: {
-            options: {
-                installments: 1,
-                bonus: 0,
-            },
-            instrument: {
-                type: 'card',
-                account: '',
-                expMonth: '',
-                expYear: '',
-                secretCode: '',
-                token: '',
-            },
-            data: {
-                property1: 'value1',
-            },
-        },
-        order: {
-            ntpID: null,
-            posSignature: NETOPIA_CONFIG.signature,
-            dateTime: new Date().toISOString(),
-            description: order.description || 'Comanda TechLab',
-            orderID: order.orderNumber,
-            amount: parseFloat(order.total),
-            currency: 'RON',
-            billing: {
-                email: order.customerEmail,
-                phone: order.customerPhone,
-                firstName: order.customerName.split(' ')[0] || '',
-                lastName: order.customerName.split(' ').slice(1).join(' ') || '',
-                city: order.city || 'Timișoara',
-                country: 826, // România = 642, UK = 826 (cod ISO)
-                state: order.county || 'Timiș',
-                postalCode: order.postalCode || '300000',
-                details: order.address || '',
-            },
-            shipping: {
-                email: order.customerEmail,
-                phone: order.customerPhone,
-                firstName: order.customerName.split(' ')[0] || '',
-                lastName: order.customerName.split(' ').slice(1).join(' ') || '',
-                city: order.city || 'Timișoara',
-                country: 826,
-                state: order.county || 'Timiș',
-                postalCode: order.postalCode || '300000',
-                details: order.address || '',
-            },
-            products: order.items || [],
-            installments: {
-                selected: 1,
-                available: [1],
-            },
-            data: {},
-        },
-    };
-
-    return paymentData;
-}
-
-// Handler principal
 export default async function handler(req, res) {
     // CORS headers
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    );
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+        return res.status(200).end();
     }
 
     if (req.method !== 'POST') {
@@ -100,63 +17,120 @@ export default async function handler(req, res) {
     }
 
     try {
+        console.log('📥 Payment request received');
+        
         const orderData = req.body;
 
-        // Validare date
-        if (!orderData.orderNumber || !orderData.total || !orderData.customerEmail) {
+        // Validare
+        if (!orderData || !orderData.orderNumber || !orderData.total || !orderData.customerEmail) {
+            console.error('❌ Validation failed');
             return res.status(400).json({ 
-                error: 'Date lipsă', 
-                required: ['orderNumber', 'total', 'customerEmail'] 
+                error: 'Date lipsă',
+                required: ['orderNumber', 'total', 'customerEmail']
             });
         }
 
-        // Setare URLs dinamic
+        console.log('✅ Validation passed for order:', orderData.orderNumber);
+
+        // Verifică NETOPIA_SIGNATURE
+        const signature = process.env.NETOPIA_SIGNATURE;
+        if (!signature) {
+            console.error('❌ NETOPIA_SIGNATURE not set');
+            return res.status(500).json({ 
+                error: 'Server configuration error'
+            });
+        }
+
+        console.log('🔑 Signature configured');
+
+        // URLs
         const baseUrl = `https://${req.headers.host}`;
-        NETOPIA_CONFIG.notifyUrl = `${baseUrl}/api/netopia-callback`;
-        NETOPIA_CONFIG.redirectUrl = `${baseUrl}/payment-return.html?order=${orderData.orderNumber}`;
+        const notifyUrl = `${baseUrl}/api/netopia-callback`;
+        const redirectUrl = `${baseUrl}/payment-return.html?order=${orderData.orderNumber}`;
 
-        // Generare payload Netopia
-        const paymentData = generateNeotopiaPaymentData(orderData);
+        console.log('🌐 URLs configured');
 
-        // Convertire în Base64 pentru a trimite către Netopia
-        const paymentDataBase64 = Buffer.from(JSON.stringify(paymentData)).toString('base64');
-
-        // IMPORTANT: Aici ar trebui să criptăm cu cheia privată
-        // Dar pentru simplitate inițială, trimitem base64
-
-        // Apel către Netopia API
-        const neotopiaResponse = await fetch(`${NETOPIA_CONFIG.apiUrl}/payment/card/start`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
+        // Payment data
+        const paymentData = {
+            config: {
+                emailTemplate: 'confirm',
+                notifyUrl: notifyUrl,
+                redirectUrl: redirectUrl,
+                language: 'ro',
             },
-            body: JSON.stringify({
-                env_key: paymentDataBase64,
-                data: paymentDataBase64,
-            }),
-        });
+            payment: {
+                options: {
+                    installments: 1,
+                    bonus: 0,
+                },
+                instrument: {
+                    type: 'card',
+                    account: '',
+                    expMonth: '',
+                    expYear: '',
+                    secretCode: '',
+                    token: '',
+                },
+            },
+            order: {
+                ntpID: null,
+                posSignature: signature,
+                dateTime: new Date().toISOString(),
+                description: orderData.description || 'Comanda TechLab',
+                orderID: orderData.orderNumber,
+                amount: parseFloat(orderData.total),
+                currency: 'RON',
+                billing: {
+                    email: orderData.customerEmail,
+                    phone: orderData.customerPhone || '',
+                    firstName: orderData.customerName?.split(' ')[0] || '',
+                    lastName: orderData.customerName?.split(' ').slice(1).join(' ') || '',
+                    city: orderData.city || 'Timișoara',
+                    country: 642, // România
+                    state: orderData.county || 'Timiș',
+                    postalCode: orderData.postalCode || '300000',
+                    details: orderData.address || '',
+                },
+                shipping: {
+                    email: orderData.customerEmail,
+                    phone: orderData.customerPhone || '',
+                    firstName: orderData.customerName?.split(' ')[0] || '',
+                    lastName: orderData.customerName?.split(' ').slice(1).join(' ') || '',
+                    city: orderData.city || 'Timișoara',
+                    country: 642,
+                    state: orderData.county || 'Timiș',
+                    postalCode: orderData.postalCode || '300000',
+                    details: orderData.address || '',
+                },
+                products: orderData.items || [],
+                installments: {
+                    selected: 1,
+                    available: [1],
+                },
+            },
+        };
 
-        const neotopiaResult = await neotopiaResponse.json();
+        console.log('📦 Payment data prepared');
 
-        if (neotopiaResult.error) {
-            return res.status(400).json({ 
-                error: 'Netopia error', 
-                details: neotopiaResult 
-            });
-        }
+        // TEMPORAR: Return test URL
+        // În producție aici ar fi apel real către Netopia
+        const testPaymentUrl = 'https://secure.netopia-payments.com/payment/card_test';
 
-        // Returnează URL-ul de plată către frontend
+        console.log('✅ Returning payment URL');
+
         return res.status(200).json({
             success: true,
-            paymentUrl: neotopiaResult.paymentURL || `${NETOPIA_CONFIG.apiUrl}/payment/card?env_key=${neotopiaResult.env_key}`,
-            token: neotopiaResult.env_key,
+            paymentUrl: testPaymentUrl,
+            message: 'Payment initialized (TEST MODE)',
+            orderNumber: orderData.orderNumber,
+            amount: paymentData.order.amount,
         });
 
     } catch (error) {
-        console.error('Netopia payment error:', error);
+        console.error('❌ Fatal error:', error);
         return res.status(500).json({ 
-            error: 'Server error', 
-            message: error.message 
+            error: 'Server error',
+            message: error.message
         });
     }
 }
