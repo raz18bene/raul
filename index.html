@@ -11,12 +11,11 @@
 </head>
 <body>
     <!-- Logo in top-left corner -->
-    <div class="logo-corner">
-        <a href="index.html" style="text-decoration: none; color: inherit;">
-            <div class="logo-text">TECH<span class="logo-accent">NEST</span></div>
-            <div class="logo-subtitle">Digital Manufacturing</div>
-        </a>
-    </div>
+<div class="logo-corner">
+    <a href="index.html" style="text-decoration: none; color: inherit;">
+        <img src="logoraul.png" alt="TechNest Logo" class="logo-image">
+    </a>
+</div>
 
     <!-- Navigation -->
     <nav class="main-nav">
@@ -31,6 +30,11 @@
                 <li><a href="contact.html" class="nav-link">Contact</a></li>
             </ul>
             
+            <a href="checkout.html" class="cart-icon">
+                🛒 Coș
+                <span class="cart-count">0</span>
+            </a>
+            
             <button class="hamburger" id="hamburger" aria-label="Menu">
                 <span></span>
                 <span></span>
@@ -38,12 +42,6 @@
             </button>
         </div>
     </nav>
-
-    <!-- Coș fixed în dreapta (CA BUTONUL ADMIN) -->
-    <a href="checkout.html" class="cart-icon">
-        🛒 Coș
-        <span class="cart-count">0</span>
-    </a>
 
     <!-- Main Content -->
     <main class="main-content">
@@ -218,10 +216,18 @@
         </div>
     </footer>
 
+    <a href="admin/login.html" class="admin-access-btn" title="Admin Panel">👤</a>
     <div class="nav-overlay" id="nav-overlay"></div>
     
     <script src="static/script.js"></script>
     <script src="static/checkout-service.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof checkoutService !== 'undefined') {
+                checkoutService.updateCartUI();
+            }
+        });
+    </script>
     <script src="static/cookie-banner.js"></script>
 </body>
 </html>

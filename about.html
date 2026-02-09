@@ -12,7 +12,7 @@
     <style>
         .about-hero {
             background: linear-gradient(135deg, rgba(0, 217, 255, 0.1) 0%, rgba(0, 217, 255, 0.05) 100%);
-            padding: 4rem 2rem;
+            padding: 8rem 2rem 4rem 2rem; /* Mărit padding-top de la 4rem la 8rem */
             text-align: center;
             margin-bottom: 4rem;
         }
@@ -187,8 +187,7 @@
     <!-- Logo -->
     <div class="logo-corner">
         <a href="index.html" style="text-decoration: none; color: inherit;">
-            <div class="logo-text">TECH<span class="logo-accent">LAB</span></div>
-            <div class="logo-subtitle">Digital Manufacturing</div>
+            <img src="logoraul.png" alt="TechNest Logo" class="logo-image">
         </a>
     </div>
 
@@ -197,6 +196,7 @@
         <div class="nav-container">
             <ul class="nav-links">
                 <li><a href="index.html" class="nav-link">Acasă</a></li>
+                <li><a href="about.html" class="nav-link">Despre Noi</a></li>
                 <li><a href="filamente.html" class="nav-link">Filamente</a></li>
                 <li><a href="componente.html" class="nav-link">Componente</a></li>
                 <li><a href="print3d.html" class="nav-link">Print 3D</a></li>
@@ -334,7 +334,7 @@
                     <div class="info-item">
                         <span class="info-label">Email:</span>
                         <span class="info-value">
-                            <a href="mailto:technest.prototyping@gmail.com">technest.prototyping@gmail.com</a>
+                            <a href="/cdn-cgi/l/email-protection#1b6f7e7873757e686f356b69746f746f626b72757c5b7c767a727735787476"><span class="__cf_email__" data-cfemail="40342523282e2533346e30322f342f343930292e2700272d21292c6e232f2d">[email&#160;protected]</span></a>
                         </span>
                     </div>
                     <div class="info-item">
@@ -438,7 +438,7 @@
                         <span style="color: var(--text-secondary); font-size: 0.9rem;">
                             Plată securizată:
                         </span>
-                        <script src="https://mny.ro/npId.js?p=159762"
+                        <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://mny.ro/npId.js?p=159762"
                                 type="text/javascript"
                                 data-version="vertical"
                                 data-contrast-color="#ffffff"></script>
@@ -473,7 +473,7 @@
             </div>
             <div class="footer-section">
                 <h4>Contact</h4>
-                <p>Email: technest.prototyping@gmail.com</p>
+                <p>Email: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5f2b3a3c37313a2c2b712f2d302b302b262f3631381f38323e3633713c3032">[email&#160;protected]</a></p>
                 <p>0754545800</p>
                 <p>0760115729</p>
             </div>
@@ -483,10 +483,21 @@
         </div>
     </footer>
 
+    <a href="admin/login.html" class="admin-access-btn" title="Admin Panel">👤</a>
     <div class="nav-overlay" id="nav-overlay"></div>
-    
+
     <script src="static/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="static/config.js"></script>
+    <script src="static/supabase-service.js"></script>
     <script src="static/checkout-service.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof checkoutService !== 'undefined') {
+                checkoutService.updateCartUI();
+            }
+        });
+    </script>
     <script src="static/cookie-banner.js"></script>
 </body>
 </html>
