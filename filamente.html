@@ -295,11 +295,18 @@
                             ${inStock ? `În stoc: ${product.stock} buc` : 'Stoc epuizat'}
                         </div>
                         
-                        ${inStock 
-                            ? `<button class="add-to-cart-btn" onclick="addToCartFromCard(this)" data-product='${JSON.stringify({id: product.id, name: product.name, price: product.sale_price || product.price, images: product.images, sku: product.sku})}\' >
-                                   🛒 Adaugă în Coș
-                               </button>` 
-                            : `<button class="add-to-cart-btn" disabled style="opacity: 0.5; cursor: not-allowed;">
+                                                ${inStock 
+                            ? `<div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.75rem;">
+                                   <div style="display:flex; align-items:center; border:1px solid var(--border); border-radius:8px; overflow:hidden;">
+                                       <button onclick="changeQty(this,-1)" style="width:32px;height:36px;background:var(--bg-card);border:none;color:var(--text-primary);font-size:1.1rem;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--bg-darker)'" onmouseout="this.style.background='var(--bg-card)'">−</button>
+                                       <span class="qty-display" style="width:36px;text-align:center;font-weight:600;font-size:0.95rem;color:var(--text-primary);">1</span>
+                                       <button onclick="changeQty(this,1)" style="width:32px;height:36px;background:var(--bg-card);border:none;color:var(--text-primary);font-size:1.1rem;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--bg-darker)'" onmouseout="this.style.background='var(--bg-card)'">+</button>
+                                   </div>
+                                   <button class="add-to-cart-btn" style="flex:1;margin:0;" onclick="addToCartFromCard(this)" data-product='${JSON.stringify({id: product.id, name: product.name, price: product.sale_price || product.price, images: product.images, sku: product.sku})}' >
+                                       🛒 Adaugă în Coș
+                                   </button>
+                               </div>` 
+                            : `<button class="add-to-cart-btn" disabled style="opacity: 0.5; cursor: not-allowed; margin-top:0.75rem;">
                                    Stoc Epuizat
                                </button>`
                         }
@@ -324,10 +331,12 @@
             }, 1500);
         }
 
-        function addToCartFromCard(btn) {
+                function addToCartFromCard(btn) {
             try {
                 const productData = JSON.parse(btn.getAttribute('data-product'));
-                checkoutService.addToCart(productData, 1);
+                const qtyDisplay = btn.closest('div').querySelector('.qty-display');
+                const qty = qtyDisplay ? parseInt(qtyDisplay.textContent) || 1 : 1;
+                checkoutService.addToCart(productData, qty);
                 
                 const originalText = btn.innerHTML;
                 btn.innerHTML = '✓ Adăugat!';
@@ -341,6 +350,13 @@
                 console.error('Error adding to cart:', error);
                 alert('Eroare la adăugarea în coș');
             }
+        }
+
+        function changeQty(btn, delta) {
+            const qtyDisplay = btn.parentElement.querySelector('.qty-display');
+            let qty = parseInt(qtyDisplay.textContent) || 1;
+            qty = Math.max(1, qty + delta);
+            qtyDisplay.textContent = qty;
         }
     </script>
     <script src="static/cookie-banner.js"></script>
