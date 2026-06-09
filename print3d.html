@@ -26,10 +26,11 @@
                 <li><a href="filamente.html" class="nav-link">Filamente</a></li>
                 <li><a href="componente.html" class="nav-link">Componente</a></li>
                 <li><a href="print3d.html" class="nav-link active">Print 3D</a></li>
-                <li><a href="laser.html" class="nav-link">Laser</a></li>
+                <li><a href="accesorii-bambu.html" class="nav-link">Accesorii Bambu</a></li>
                 <li><a href="contact.html" class="nav-link">Contact</a></li>
             </ul>
             
+            <button id="theme-toggle" onclick="toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;cursor:pointer;color:var(--text-primary);font-size:1rem;margin-right:0.5rem;" title="Mod zi/noapte">🌙</button>
             <a href="checkout.html" class="cart-icon">
                 🛒 Coș
                 <span class="cart-count">0</span>
@@ -53,6 +54,37 @@
 
 
 
+
+        <!-- Cere Ofertă -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:2rem;margin-bottom:2rem;">
+            <h2 style="color:var(--primary);margin-bottom:0.5rem;">📤 Trimite fișierul tău</h2>
+            <p style="color:var(--text-secondary);margin-bottom:1.5rem;">Ai un model 3D propriu? Trimite-ne fișierul și îți facem o ofertă personalizată în 24h.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;" id="oferta-form">
+                <input type="text" id="oferta-name" placeholder="Numele tău *" style="padding:0.75rem;background:var(--bg-darker);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);outline:none;">
+                <input type="email" id="oferta-email" placeholder="Email *" style="padding:0.75rem;background:var(--bg-darker);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);outline:none;">
+                <input type="tel" id="oferta-phone" placeholder="Telefon" style="padding:0.75rem;background:var(--bg-darker);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);outline:none;">
+                <select id="oferta-material" style="padding:0.75rem;background:var(--bg-darker);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);outline:none;">
+                    <option value="">Material preferat</option>
+                    <option>PLA</option>
+                    <option>PETG</option>
+                    <option>ABS</option>
+                    <option>TPU</option>
+                    <option>ASA</option>
+                    <option>Nu știu - recomandați voi</option>
+                </select>
+                <textarea id="oferta-message" placeholder="Descriere proiect / detalii suplimentare" rows="3" style="grid-column:1/-1;padding:0.75rem;background:var(--bg-darker);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);outline:none;resize:vertical;"></textarea>
+                <div style="grid-column:1/-1;border:2px dashed var(--border);border-radius:8px;padding:1.5rem;text-align:center;cursor:pointer;transition:border-color 0.2s;" onclick="document.getElementById('oferta-file').click()" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+                    <input type="file" id="oferta-file" accept=".stl,.obj,.step,.3mf,.gcode" style="display:none;" onchange="updateFileName(this)">
+                    <p style="color:var(--text-secondary);margin:0;">📎 <span id="file-name">Click pentru a atașa fișier 3D (.stl, .obj, .step, .3mf)</span></p>
+                </div>
+                <button onclick="trimiteOferta()" style="grid-column:1/-1;padding:0.85rem;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:1rem;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                    📨 Trimite Cererea de Ofertă
+                </button>
+            </div>
+            <div id="oferta-success" style="display:none;text-align:center;padding:1rem;color:#10b981;font-weight:600;">
+                ✅ Cererea a fost trimisă! Te contactăm în maxim 24h.
+            </div>
+        </div>
 
         <!-- Loading -->
         <div class="loading" id="loading-state">
@@ -112,7 +144,7 @@
                     <li><a href="filamente.html">Filamente</a></li>
                     <li><a href="componente.html">Componente</a></li>
                     <li><a href="print3d.html">Print 3D</a></li>
-                    <li><a href="laser.html">Laser</a></li>
+                    <li><a href="accesorii-bambu.html">Accesorii Bambu</a></li>
                     <li><a href="anpc.html">ANPC</a></li>
                 </ul>
             </div>
@@ -242,10 +274,17 @@
                         </div>
                         
                         ${inStock 
-                            ? `<button class="add-to-cart-btn" onclick="addToCartFromCard(this)" data-product='${JSON.stringify({id: product.id, name: product.name, price: product.sale_price || product.price, images: product.images, sku: product.sku})}\' >
-                                   🛒 Adaugă în Coș
-                               </button>` 
-                            : `<button class="add-to-cart-btn" disabled style="opacity: 0.5; cursor: not-allowed;">
+                            ? `<div class="qty-wrapper">
+                                   <div class="qty-controls">
+                                       <button class="qty-btn" onclick="changeQty(this,-1)">−</button>
+                                       <span class="qty-display">1</span>
+                                       <button class="qty-btn" onclick="changeQty(this,1)">+</button>
+                                   </div>
+                                   <button class="add-to-cart-btn" onclick="addToCartFromCard(this)" data-product='${JSON.stringify({id: product.id, name: product.name, price: product.sale_price || product.price, images: product.images, sku: product.sku})}\'>
+                                       🛒 Adaugă în Coș
+                                   </button>
+                               </div>`
+                            : `<button class="add-to-cart-btn" disabled style="opacity:0.5;cursor:not-allowed;margin-top:0.75rem;">
                                    Stoc Epuizat
                                </button>`
                         }
@@ -273,16 +312,13 @@
         function addToCartFromCard(btn) {
             try {
                 const productData = JSON.parse(btn.getAttribute('data-product'));
-                checkoutService.addToCart(productData, 1);
-                
+                const qtyDisplay = btn.closest('.qty-wrapper')?.querySelector('.qty-display');
+                const qty = qtyDisplay ? parseInt(qtyDisplay.textContent) || 1 : 1;
+                checkoutService.addToCart(productData, qty);
                 const originalText = btn.innerHTML;
                 btn.innerHTML = '✓ Adăugat!';
                 btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.style.background = '';
-                }, 1500);
+                setTimeout(() => { btn.innerHTML = originalText; btn.style.background = ''; }, 1500);
             } catch (error) {
                 console.error('Error adding to cart:', error);
                 alert('Eroare la adăugarea în coș');
@@ -290,5 +326,38 @@
         }
     </script>
     <script src="static/cookie-banner.js"></script>
+    <script>
+        function updateFileName(input) {
+            document.getElementById('file-name').textContent = input.files[0] ? input.files[0].name : 'Click pentru a atașa fișier 3D';
+        }
+        function trimiteOferta() {
+            const name = document.getElementById('oferta-name').value;
+            const email = document.getElementById('oferta-email').value;
+            if (!name || !email) { alert('Completează numele și emailul!'); return; }
+            // Send email via mailto as fallback
+            const msg = `Cerere ofertă Print 3D\nNume: ${name}\nEmail: ${email}\nTelefon: ${document.getElementById('oferta-phone').value}\nMaterial: ${document.getElementById('oferta-material').value}\nDetalii: ${document.getElementById('oferta-message').value}`;
+            window.location.href = `mailto:technest.prototyping@gmail.com?subject=Cerere ofertă Print 3D - ${name}&body=${encodeURIComponent(msg)}`;
+            document.getElementById('oferta-form').style.display = 'none';
+            document.getElementById('oferta-success').style.display = 'block';
+        }
+        function changeQty(btn, delta) {
+            const qtyDisplay = btn.parentElement.querySelector('.qty-display');
+            let qty = parseInt(qtyDisplay.textContent) || 1;
+            qty = Math.max(1, qty + delta);
+            qtyDisplay.textContent = qty;
+        }
+        function toggleTheme() {
+            const isLight = document.body.classList.toggle('light-mode');
+            document.getElementById('theme-toggle').textContent = isLight ? '☀️' : '🌙';
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        }
+        (function() {
+            if (localStorage.getItem('theme') === 'light') {
+                document.body.classList.add('light-mode');
+                const btn = document.getElementById('theme-toggle');
+                if (btn) btn.textContent = '☀️';
+            }
+        })();
+    </script>
 </body>
 </html>
