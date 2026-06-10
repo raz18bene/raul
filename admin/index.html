@@ -55,9 +55,14 @@
                     <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">
                         👤 Conectat ca: <strong style="color: var(--primary);" id="admin-username">Admin</strong>
                     </p>
-                    <button onclick="logout()" class="btn btn-secondary" style="background: var(--error);">
-                        🚪 Deconectare
-                    </button>
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                        <button onclick="testIntegrations()" class="btn btn-secondary" style="font-size:0.85rem;">
+                            🔧 Test Oblio + SameDay
+                        </button>
+                        <button onclick="logout()" class="btn btn-secondary" style="background: var(--error);">
+                            🚪 Deconectare
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1131,5 +1136,27 @@ ${order.notes ? '📝 NOTIȚE:\n' + order.notes : ''}
         };
     </script>
 
+
+    <script>
+        async function testIntegrations() {
+            const btn = event.target;
+            btn.textContent = '⏳ Se testează...';
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/test-integrations');
+                const data = await res.json();
+                const smd = data.sameday;
+                const obl = data.oblio;
+                alert(
+                    'SameDay: ' + smd.message + (smd.details ? '\nDetalii: ' + JSON.stringify(smd.details) : '') +
+                    '\n\nOblio: ' + obl.message + (obl.details ? '\nDetalii: ' + JSON.stringify(obl.details) : '')
+                );
+            } catch(e) {
+                alert('Eroare la test: ' + e.message);
+            }
+            btn.textContent = '🔧 Test Oblio + SameDay';
+            btn.disabled = false;
+        }
+    </script>
 </body>
 </html>
