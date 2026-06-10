@@ -166,6 +166,7 @@
             color: var(--primary);
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="login-container">
@@ -225,56 +226,53 @@
     </div>
 
     <script>
-        // Verifică dacă userul e deja logat
-        if (sessionStorage.getItem('admin_logged_in') === 'true') {
-            window.location.href = 'index.html';
+        // Init Supabase client din /api/config
+        let supabaseClient = null;
+        async function initSupabase() {
+            if (supabaseClient) return supabaseClient;
+            const res = await fetch('/api/config');
+            const cfg = await res.json();
+            supabaseClient = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+            return supabaseClient;
         }
+
+        // Verifică dacă userul e deja logat
+        (async () => {
+            const sb = await initSupabase();
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) window.location.href = 'index.html';
+        })();
 
         // Handle login form
         document.getElementById('login-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const username = document.getElementById('username').value;
+            const email    = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorMsg = document.getElementById('error-message');
-            
-            // Autentificare prin API (credentialele sunt in Vercel env, nu in cod)
-            let authOk = false;
-            try {
-                const res = await fetch('/api/admin-auth', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                const data = await res.json();
-                if (data.success && data.token) {
-                    sessionStorage.setItem('admin_token', data.token);
-                    authOk = true;
-                }
-            } catch(e) {
-                console.error('Auth error:', e);
-            }
 
-            if (authOk) {
-                // Login reușit
-                sessionStorage.setItem('admin_logged_in', 'true');
-                sessionStorage.setItem('admin_username', username);
-                sessionStorage.setItem('login_time', new Date().getTime());
-                
-                // Redirect către admin panel
+            try {
+                const sb = await initSupabase();
+                const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+                if (error || !data.session) throw new Error(error?.message || 'Login eșuat');
+
+                // Verifică dacă are rol admin în metadata
+                const role = data.user?.app_metadata?.role || data.user?.user_metadata?.role;
+                if (role !== 'admin') {
+                    await sb.auth.signOut();
+                    throw new Error('Nu ai permisiuni de admin.');
+                }
+
                 window.location.href = 'index.html';
-            } else {
-                // Login eșuat
+
+            } catch(err) {
+                console.error('Auth error:', err);
+                errorMsg.textContent = err.message || 'Credentiale incorecte';
                 errorMsg.classList.add('show');
-                
-                // Shake animation
                 document.querySelector('.login-container').style.animation = 'shake 0.5s';
                 setTimeout(() => {
                     document.querySelector('.login-container').style.animation = '';
-                }, 500);
-                
-                // Ascunde eroarea după 3 secunde
-                setTimeout(() => {
                     errorMsg.classList.remove('show');
                 }, 3000);
             }

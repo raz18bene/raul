@@ -8,14 +8,40 @@
 </head>
 <body>
     <!-- Protection Script -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        if (sessionStorage.getItem('admin_logged_in') !== 'true') {
-            window.location.href = 'login.html';
+        let _sb = null;
+        async function getAdminSupabase() {
+            if (_sb) return _sb;
+            const res = await fetch('/api/config');
+            const cfg = await res.json();
+            _sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+            return _sb;
         }
-        
-        function logout() {
+
+        // Verifică sesiunea la load
+        (async () => {
+            const sb = await getAdminSupabase();
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+            const role = session.user?.app_metadata?.role || session.user?.user_metadata?.role;
+            if (role !== 'admin') {
+                await sb.auth.signOut();
+                window.location.href = 'login.html';
+                return;
+            }
+            // Afișează emailul
+            const el = document.getElementById('admin-username');
+            if (el) el.textContent = session.user.email;
+        })();
+
+        async function logout() {
             if (confirm('Sigur vrei să ieși din Admin Panel?')) {
-                sessionStorage.clear();
+                const sb = await getAdminSupabase();
+                await sb.auth.signOut();
                 window.location.href = 'login.html';
             }
         }
@@ -43,12 +69,7 @@
                 </div>
             </div>
 
-            <script>
-                const username = sessionStorage.getItem('admin_username');
-                if (username) {
-                    document.getElementById('admin-username').textContent = username;
-                }
-            </script>
+<!-- username set by auth script above -->
 
             <div id="alert-container"></div>
 
