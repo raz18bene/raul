@@ -238,11 +238,24 @@
             const password = document.getElementById('password').value;
             const errorMsg = document.getElementById('error-message');
             
-            // Credențiale admin
-            const ADMIN_USERNAME = 'admin';
-            const ADMIN_PASSWORD = 'Sitenou2026@';
-            
-            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+            // Autentificare prin API (credentialele sunt in Vercel env, nu in cod)
+            let authOk = false;
+            try {
+                const res = await fetch('/api/admin-auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (data.success && data.token) {
+                    sessionStorage.setItem('admin_token', data.token);
+                    authOk = true;
+                }
+            } catch(e) {
+                console.error('Auth error:', e);
+            }
+
+            if (authOk) {
                 // Login reușit
                 sessionStorage.setItem('admin_logged_in', 'true');
                 sessionStorage.setItem('admin_username', username);

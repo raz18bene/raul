@@ -1,82 +1,61 @@
-// api/netopia-start-payment.js
-// Vercel Serverless Function - ESM version
+// api/netopia-start-payment.js - Vercel Serverless Function
+// Toate credentialele vin din Vercel env variables - NIMIC hardcodat
 
 export default async function handler(req, res) {
-    // CORS headers
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        console.log('📥 Payment request received');
-        
         const orderData = req.body;
 
-        // Validare
-        if (!orderData || !orderData.orderNumber || !orderData.total || !orderData.customerEmail) {
-            console.error('❌ Validation failed');
-            return res.status(400).json({ 
+        // Validare date obligatorii
+        if (!orderData?.orderNumber || !orderData?.total || !orderData?.customerEmail) {
+            return res.status(400).json({
                 error: 'Date lipsă',
                 required: ['orderNumber', 'total', 'customerEmail']
             });
         }
 
-        console.log('✅ Validation passed for order:', orderData.orderNumber);
+        // Credentiale din Vercel env - NIMIC hardcodat
+        const signature  = process.env.NETOPIA_SIGNATURE;
+        const publicKey  = process.env.NETOPIA_PUBLIC_KEY;
+        const privateKey = process.env.NETOPIA_PRIVATE_KEY;
 
-        // Verifică NETOPIA_SIGNATURE
-        const signature = process.env.NETOPIA_SIGNATURE;
-        if (!signature) {
-            console.error('❌ NETOPIA_SIGNATURE not set');
-            return res.status(500).json({ 
-                error: 'Server configuration error'
-            });
+        if (!signature || !publicKey || !privateKey) {
+            console.error('❌ Netopia env vars lipsesc');
+            return res.status(500).json({ error: 'Netopia not configured' });
         }
 
-        console.log('🔑 Signature configured');
-
-        // URLs
-        const baseUrl = `https://${req.headers.host}`;
-        const notifyUrl = `${baseUrl}/api/netopia-callback`;
+        const baseUrl    = `https://${req.headers.host}`;
+        const notifyUrl  = `${baseUrl}/api/netopia-callback`;
         const redirectUrl = `${baseUrl}/payment-return.html?order=${orderData.orderNumber}`;
 
-        console.log('🌐 URLs configured');
-
-        // Payment data
-        const paymentData = {
+        // Construiește payload Netopia v2
+        const payload = {
             config: {
                 emailTemplate: 'confirm',
-                notifyUrl: notifyUrl,
-                redirectUrl: redirectUrl,
+                notifyUrl,
+                redirectUrl,
                 language: 'ro',
             },
             payment: {
-                options: {
-                    installments: 1,
-                    bonus: 0,
-                },
+                options: { installments: 1, bonus: 0 },
                 instrument: {
                     type: 'card',
-                    account: '',
-                    expMonth: '',
-                    expYear: '',
-                    secretCode: '',
-                    token: '',
+                    account: '', expMonth: '', expYear: '',
+                    secretCode: '', token: '',
                 },
             },
             order: {
                 ntpID: null,
                 posSignature: signature,
                 dateTime: new Date().toISOString(),
-                description: orderData.description || 'Comanda TechLab',
+                description: `Comanda ${orderData.orderNumber} - TechNest`,
                 orderID: orderData.orderNumber,
                 amount: parseFloat(orderData.total),
                 currency: 'RON',
@@ -85,10 +64,10 @@ export default async function handler(req, res) {
                     phone: orderData.customerPhone || '',
                     firstName: orderData.customerName?.split(' ')[0] || '',
                     lastName: orderData.customerName?.split(' ').slice(1).join(' ') || '',
-                    city: orderData.city || 'Timișoara',
-                    country: 642, // România
-                    state: orderData.county || 'Timiș',
-                    postalCode: orderData.postalCode || '300000',
+                    city: orderData.city || '',
+                    country: 642,
+                    state: orderData.county || '',
+                    postalCode: orderData.postalCode || '',
                     details: orderData.address || '',
                 },
                 shipping: {
@@ -96,41 +75,46 @@ export default async function handler(req, res) {
                     phone: orderData.customerPhone || '',
                     firstName: orderData.customerName?.split(' ')[0] || '',
                     lastName: orderData.customerName?.split(' ').slice(1).join(' ') || '',
-                    city: orderData.city || 'Timișoara',
+                    city: orderData.city || '',
                     country: 642,
-                    state: orderData.county || 'Timiș',
-                    postalCode: orderData.postalCode || '300000',
+                    state: orderData.county || '',
+                    postalCode: orderData.postalCode || '',
                     details: orderData.address || '',
                 },
                 products: orderData.items || [],
-                installments: {
-                    selected: 1,
-                    available: [1],
-                },
+                installments: { selected: 1, available: [1] },
             },
         };
 
-        console.log('📦 Payment data prepared');
+        // Apel real Netopia v2 API
+        const netopiaRes = await fetch('https://secure.netopia-payments.com/payment/card/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': publicKey,
+            },
+            body: JSON.stringify(payload),
+        });
 
-        // TEMPORAR: Return test URL
-        // În producție aici ar fi apel real către Netopia
-        const testPaymentUrl = 'https://secure.netopia-payments.com/payment/card_test';
+        const netopiaData = await netopiaRes.json();
 
-        console.log('✅ Returning payment URL');
+        if (!netopiaRes.ok || !netopiaData?.payment?.paymentURL) {
+            console.error('❌ Netopia error:', netopiaData);
+            return res.status(502).json({
+                error: 'Netopia payment init failed',
+                details: netopiaData
+            });
+        }
 
         return res.status(200).json({
             success: true,
-            paymentUrl: testPaymentUrl,
-            message: 'Payment initialized (TEST MODE)',
+            paymentUrl: netopiaData.payment.paymentURL,
             orderNumber: orderData.orderNumber,
-            amount: paymentData.order.amount,
+            amount: payload.order.amount,
         });
 
     } catch (error) {
         console.error('❌ Fatal error:', error);
-        return res.status(500).json({ 
-            error: 'Server error',
-            message: error.message
-        });
+        return res.status(500).json({ error: 'Server error', message: error.message });
     }
 }
