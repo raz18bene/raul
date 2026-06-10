@@ -184,8 +184,17 @@ class SupabaseService {
     }
 }
 
-// Inițializare serviciu
-let supabaseService;
-if (typeof SUPABASE_CONFIG !== 'undefined') {
-    supabaseService = new SupabaseService(SUPABASE_CONFIG);
+// Inițializare serviciu (async - config vine din /api/config)
+let supabaseService = null;
+
+async function initSupabaseService() {
+    if (supabaseService) return supabaseService;
+    const config = await loadSupabaseConfig();
+    if (config) {
+        supabaseService = new SupabaseService(config);
+    }
+    return supabaseService;
 }
+
+// Auto-init la încărcare
+initSupabaseService();

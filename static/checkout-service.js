@@ -291,6 +291,7 @@ class CheckoutService {
             };
 
             // 4. Creează comanda în Supabase
+            await initSupabaseService();
             const order = await supabaseService.createOrder(orderData);
             console.log('✓ Order created in database');
 
@@ -316,15 +317,32 @@ class CheckoutService {
                 }
             }
 
-            // 7. NU golește coșul (se face după plată)
-            // 8. RETURNEAZĂ order data
+            // 7. Scade stoc in Oblio (async, non-blocking)
+            try {
+                await fetch('/api/oblio?action=decrease-stock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderNumber,
+                        items: this.cart.map(item => ({
+                            name: item.name,
+                            code: item.code || item.id || '',
+                            quantity: item.quantity,
+                            price: item.price,
+                        }))
+                    })
+                });
+                console.log('\u2713 Oblio stock decreased');
+            } catch (oblioErr) {
+                console.warn('Oblio stock update failed (non-critical):', oblioErr);
+            }
 
+            // 8. NU goleste cosul (se face dupa plata)
             return {
                 success: true,
                 orderId: order.id,
                 orderNumber: orderNumber
             };
-
         } catch (error) {
             console.error('❌ Order processing error:', error);
             throw error;
@@ -406,6 +424,7 @@ class CheckoutService {
 
     async getOrderStatus(orderNumber) {
         try {
+            await initSupabaseService();
             const order = await supabaseService.getOrderByNumber(orderNumber);
             return {
                 success: true,

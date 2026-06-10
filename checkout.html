@@ -472,10 +472,10 @@
 <body>
     <!-- Logo -->
     <div class="logo-corner">
-        <a href="index.html" style="text-decoration: none; color: inherit;">
-            <img src="../logoraul.png" alt="TechNest Logo" class="logo-image">
-        </a>
-    </div>
+    <a href="index.html" style="text-decoration: none; color: inherit;">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;letter-spacing:-0.03em;color:var(--text-primary);text-shadow:0 0 20px rgba(249,115,22,0.4);">Tech<span style="color:var(--primary);">Nest</span></span>
+    </a>
+</div>
 
     <!-- Navigation -->
     <nav class="main-nav">
@@ -490,6 +490,7 @@
                 <li><a href="contact.html" class="nav-link">Contact</a></li>
             </ul>
             
+            <button id="theme-toggle" onclick="toggleTheme()" title="Schimbă tema" style="background:none;border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;cursor:pointer;color:var(--text-primary);font-size:1rem;margin-right:0.5rem;transition:all 0.2s;" title="Mod zi/noapte">🌙</button>
             <a href="checkout.html" class="cart-icon">
                 🛒 Coș
                 <span class="cart-count">0</span>
@@ -661,27 +662,63 @@
                                     </svg>
                                 </button>
                                 <div class="accordion-content" id="shipping-data-content">
-                                    <div class="form-group">
-                                        <label for="customer-address">Adresă Completă *</label>
-                                        <input type="text" id="customer-address" required placeholder="Str. Exemplu, Nr. 10, Bl. A, Ap. 5">
-                                    </div>
-                                    
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="customer-city">Oraș *</label>
-                                            <input type="text" id="customer-city" required placeholder="Cluj-Napoca">
+                                    <!-- Metodă transport -->
+                                    <div class="form-group" style="margin-bottom:1.5rem;">
+                                        <label style="font-weight:600;margin-bottom:0.75rem;display:block;">Metodă de transport *</label>
+                                        <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                                            <label class="shipping-option" id="opt-sameday" onclick="selectShipping('sameday')" style="flex:1;min-width:180px;border:2px solid var(--primary);border-radius:12px;padding:1rem;cursor:pointer;background:rgba(0,217,255,0.07);transition:all 0.2s;">
+                                                <div style="display:flex;align-items:center;gap:0.6rem;">
+                                                    <input type="radio" name="shipping-method" value="sameday" checked style="accent-color:var(--primary);">
+                                                    <div>
+                                                        <strong style="display:block;">🚚 SameDay Courier</strong>
+                                                        <span style="color:var(--text-secondary);font-size:0.9rem;">Livrare în 24-48h</span>
+                                                    </div>
+                                                </div>
+                                                <div style="margin-top:0.5rem;font-size:1.1rem;font-weight:700;color:var(--primary);">20,00 RON</div>
+                                            </label>
+                                            <label class="shipping-option" id="opt-pickup" onclick="selectShipping('pickup')" style="flex:1;min-width:180px;border:2px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:all 0.2s;">
+                                                <div style="display:flex;align-items:center;gap:0.6rem;">
+                                                    <input type="radio" name="shipping-method" value="pickup" style="accent-color:var(--primary);">
+                                                    <div>
+                                                        <strong style="display:block;">🏪 Ridicare din magazin</strong>
+                                                        <span style="color:var(--text-secondary);font-size:0.9rem;">Timișoara, str. exemplu</span>
+                                                    </div>
+                                                </div>
+                                                <div style="margin-top:0.5rem;font-size:1.1rem;font-weight:700;color:var(--success, #22c55e);">GRATUIT</div>
+                                            </label>
                                         </div>
+                                    </div>
+
+                                    <!-- Adresa livrare - vizibila doar pt sameday -->
+                                    <div id="delivery-address-block">
                                         <div class="form-group">
-                                            <label for="customer-county">Județ *</label>
-                                            <input type="text" id="customer-county" required placeholder="Cluj">
+                                            <label for="customer-address">Adresă Completă *</label>
+                                            <input type="text" id="customer-address" required placeholder="Str. Exemplu, Nr. 10, Bl. A, Ap. 5">
+                                        </div>
+                                        
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="customer-city">Oraș *</label>
+                                                <input type="text" id="customer-city" required placeholder="Cluj-Napoca">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="customer-county">Județ *</label>
+                                                <input type="text" id="customer-county" required placeholder="Cluj">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="customer-postal">Cod Poștal *</label>
+                                                <input type="text" id="customer-postal" required placeholder="300001" pattern="[0-9]{6}" title="Cod poștal 6 cifre">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="customer-weight">Greutate estimată colet (kg)</label>
+                                                <input type="number" id="customer-weight" value="1" min="0.1" max="30" step="0.1" placeholder="1">
+                                            </div>
                                         </div>
                                     </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="customer-postal">Cod Poștal</label>
-                                        <input type="text" id="customer-postal" placeholder="400001">
-                                    </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="customer-notes">Notițe pentru Livrare (opțional)</label>
                                         <textarea id="customer-notes" rows="3" placeholder="Ex: Sunați înainte de livrare, interfon nefuncțional, etc."></textarea>
@@ -832,7 +869,8 @@
 
             // Renderează sumar
             const subtotal = checkoutService.getCartTotal();
-            const shipping = 0; // Transport gratuit
+            const shippingMethod = document.querySelector('input[name="shipping-method"]:checked')?.value || 'sameday';
+            const shipping = shippingMethod === 'pickup' ? 0 : 20;
             const total = subtotal + shipping;
 
             orderSummary.innerHTML = `
@@ -843,7 +881,7 @@
                 </div>
                 <div class="summary-row">
                     <span>Transport:</span>
-                    <span style="color: var(--success);">GRATUIT</span>
+                    <span id="shipping-cost-display" style="color: var(--primary);">${shipping > 0 ? shipping.toFixed(2) + ' RON' : '<span style="color:var(--success)">GRATUIT</span>'}</span>
                 </div>
                 <div class="summary-row summary-total">
                     <span>Total de plată:</span>
@@ -1007,6 +1045,9 @@
                 return;
             }
             customerData.paymentMethod = paymentMethod;
+            customerData.shippingMethod = document.querySelector('input[name="shipping-method"]:checked')?.value || 'sameday';
+            customerData.weight = parseFloat(document.getElementById('customer-weight')?.value || 1);
+            customerData.shippingCost = customerData.shippingMethod === 'pickup' ? 0 : 20;
             
             checkoutService.processOrder(customerData)
                 .then(orderResult => {
@@ -1117,6 +1158,58 @@
                 updateFloating();
             }, 500);
         })();
+    </script>
+    <script>
+        // DARK/LIGHT MODE
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('theme-toggle');
+            const isLight = body.classList.toggle('light-mode');
+            btn.textContent = isLight ? '🌙' : '☀️';
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        }
+        // Apply saved theme
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'light') {
+                document.body.classList.add('light-mode');
+                const btn = document.getElementById('theme-toggle');
+                if (btn) btn.textContent = '☀️';
+            }
+        })();
+    </script>
+
+    <script>
+        // Shipping method toggle
+        function selectShipping(method) {
+            const addrBlock = document.getElementById('delivery-address-block');
+            const optSameday = document.getElementById('opt-sameday');
+            const optPickup = document.getElementById('opt-pickup');
+            const addressInput = document.getElementById('customer-address');
+            const cityInput = document.getElementById('customer-city');
+            const countyInput = document.getElementById('customer-county');
+            const postalInput = document.getElementById('customer-postal');
+
+            if (method === 'pickup') {
+                addrBlock.style.display = 'none';
+                optPickup.style.borderColor = 'var(--primary)';
+                optPickup.style.background = 'rgba(0,217,255,0.07)';
+                optSameday.style.borderColor = 'var(--border)';
+                optSameday.style.background = '';
+                // Remove required from address fields
+                [addressInput, cityInput, countyInput, postalInput].forEach(el => { if(el) el.removeAttribute('required'); });
+            } else {
+                addrBlock.style.display = 'block';
+                optSameday.style.borderColor = 'var(--primary)';
+                optSameday.style.background = 'rgba(0,217,255,0.07)';
+                optPickup.style.borderColor = 'var(--border)';
+                optPickup.style.background = '';
+                // Re-add required
+                [addressInput, cityInput, countyInput, postalInput].forEach(el => { if(el) el.setAttribute('required', ''); });
+            }
+            // Refresh order summary to update shipping cost
+            if (typeof renderOrderSummary === 'function') renderOrderSummary();
+        }
     </script>
 </body>
 </html>

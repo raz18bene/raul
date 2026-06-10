@@ -1,10 +1,7 @@
 // Admin Panel - Full Featured
 class AdminPanel {
     constructor() {
-        this.supabase = supabase.createClient(
-            SUPABASE_CONFIG.url,
-            SUPABASE_CONFIG.serviceRoleKey
-        );
+        this.supabase = null; // inițializat async în init()
         this.currentProductId = null;
         this.currentCategoryId = null;
         this.categories = [];
@@ -13,6 +10,10 @@ class AdminPanel {
     }
 
     async init() {
+        // Fetch config din /api/admin-config
+        const res = await fetch('/api/admin-config');
+        const cfg = await res.json();
+        this.supabase = supabase.createClient(cfg.supabaseUrl, cfg.supabaseServiceRoleKey);
         await this.loadCategories();
         await this.loadDashboard();
         document.getElementById('product-form').addEventListener('submit', (e) => this.handleProductSubmit(e));

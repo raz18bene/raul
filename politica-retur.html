@@ -12,10 +12,10 @@
 <body>
     <!-- Logo -->
     <div class="logo-corner">
-        <a href="index.html" style="text-decoration: none; color: inherit;">
-            <img src="../logoraul.png" alt="TechNest Logo" class="logo-image">
-        </a>
-    </div>
+    <a href="index.html" style="text-decoration: none; color: inherit;">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;letter-spacing:-0.03em;color:var(--text-primary);text-shadow:0 0 20px rgba(249,115,22,0.4);">Tech<span style="color:var(--primary);">Nest</span></span>
+    </a>
+</div>
     <nav class="main-nav">
         <div class="nav-container">
             <ul class="nav-links">
@@ -27,6 +27,7 @@
                 <li><a href="accesorii-bambu.html" class="nav-link">Accesorii Bambu</a></li>
                 <li><a href="contact.html" class="nav-link">Contact</a></li>
             </ul>
+            <button id="theme-toggle" onclick="toggleTheme()" title="Schimbă tema" style="background:none;border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;cursor:pointer;color:var(--text-primary);font-size:1rem;margin-right:0.5rem;transition:all 0.2s;" title="Mod zi/noapte">🌙</button>
             <a href="checkout.html" class="cart-icon">🛒 Coș<span class="cart-count">0</span></a>
             <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
         </div>
@@ -304,6 +305,25 @@
                 if (mainCount) observer.observe(mainCount, { childList: true, characterData: true, subtree: true });
                 updateFloating();
             }, 500);
+        })();
+    </script>
+    <script>
+        // DARK/LIGHT MODE
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('theme-toggle');
+            const isLight = body.classList.toggle('light-mode');
+            btn.textContent = isLight ? '🌙' : '☀️';
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        }
+        // Apply saved theme
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'light') {
+                document.body.classList.add('light-mode');
+                const btn = document.getElementById('theme-toggle');
+                if (btn) btn.textContent = '☀️';
+            }
         })();
     </script>
 </body>

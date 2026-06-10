@@ -248,17 +248,23 @@
     <script src="../static/supabase-service.js"></script>
 
     <script>
-        // Supabase client cu service role key
-        const supabaseAdmin = supabase.createClient(
-            SUPABASE_CONFIG.url,
-            SUPABASE_CONFIG.serviceRoleKey
-        );
+        // Supabase client cu service role key (din /api/admin-config)
+        let supabaseAdmin = null;
+
+        async function initAdminSupabase() {
+            if (supabaseAdmin) return supabaseAdmin;
+            const res = await fetch('/api/admin-config');
+            const cfg = await res.json();
+            supabaseAdmin = supabase.createClient(cfg.supabaseUrl, cfg.supabaseServiceRoleKey);
+            return supabaseAdmin;
+        }
 
         let currentTab = 'filamente';
         let categories = {};
 
         // Încărcare inițială
         document.addEventListener('DOMContentLoaded', async () => {
+            await initAdminSupabase();
             await loadCategories();
             await loadAllProducts();
         });
@@ -586,10 +592,20 @@
                             </div>
 
                             <!-- Acțiuni -->
-                            <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 150px;">
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 160px;">
                                 <button onclick="viewOrderDetails('${order.id}')" class="btn btn-secondary" style="width: 100%; font-size: 0.9rem;">
                                     👁️ Vezi Detalii
                                 </button>
+                                ${order.awb_number
+                                    ? `<div style="padding:0.5rem 0.75rem;background:rgba(0,217,255,0.1);border:1px solid var(--primary);border-radius:6px;font-size:0.85rem;text-align:center;">
+                                        🏷️ AWB: <strong>${order.awb_number}</strong>
+                                        <br><a href="https://sameday.ro/tracking?awb=${order.awb_number}" target="_blank" style="color:var(--primary);font-size:0.8rem;">Track →</a>
+                                       </div>`
+                                    : `<button onclick="generateAWB('${order.id}', '${order.order_number}', '${order.customer_name}', '${order.customer_phone || ''}', '${order.customer_email || ''}', ${JSON.stringify((order.shipping_address||{}).street||'').replace(/"/g,"'")||"''"}, ${JSON.stringify((order.shipping_address||{}).city||'').replace(/"/g,"'")||"''"}, ${JSON.stringify((order.shipping_address||{}).county||'').replace(/"/g,"'")||"''"}, ${JSON.stringify((order.shipping_address||{}).postal_code||'').replace(/"/g,"'")||"''"})" 
+                                        style="width:100%;font-size:0.9rem;padding:0.5rem;background:var(--primary);color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:600;">
+                                        🚚 Generează AWB
+                                      </button>`
+                                }
                                 <select onchange="updateOrderStatus('${order.id}', this.value)" style="padding: 0.5rem; background: var(--bg-darker); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.9rem;">
                                     <option value="">Schimbă Status</option>
                                     <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
@@ -760,5 +776,59 @@ ${order.notes ? '📝 NOTIȚE:\n' + order.notes : ''}
         };
     </script>
 <script src="static/cookie-banner.js"></script>
+
+    <script>
+        async function generateAWB(orderId, orderNumber, name, phone, email, address, city, county, postal) {
+            if (!confirm(`Generezi AWB pentru comanda ${orderNumber}?`)) return;
+            
+            const btn = event.target;
+            btn.textContent = '⏳ Se generează...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/sameday?action=create-awb', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderNumber,
+                        recipientName: name,
+                        recipientPhone: phone,
+                        recipientEmail: email,
+                        recipientAddress: address,
+                        recipientCity: city,
+                        recipientCounty: county,
+                        recipientPostalCode: postal,
+                        weight: 1,
+                        parcels: 1,
+                        cashOnDelivery: 0,
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || JSON.stringify(data.details || 'Eroare necunoscuta'));
+                }
+
+                // Save AWB number to Supabase
+                await initAdminSupabase();
+                const { error } = await supabaseAdmin
+                    .from('orders')
+                    .update({ awb_number: data.awbNumber, status: 'shipped' })
+                    .eq('id', orderId);
+
+                if (error) throw error;
+
+                alert(`✅ AWB generat cu succes!\nNumăr AWB: ${data.awbNumber}`);
+                loadOrders(); // refresh list
+
+            } catch (err) {
+                console.error('AWB error:', err);
+                alert('❌ Eroare la generare AWB:\n' + err.message);
+                btn.textContent = '🚚 Generează AWB';
+                btn.disabled = false;
+            }
+        }
+    </script>
 </body>
 </html>
