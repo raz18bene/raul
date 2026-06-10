@@ -7,41 +7,33 @@
     <link rel="stylesheet" href="../static/styles.css">
 </head>
 <body>
-    <!-- Protection Script -->
+    <!-- Protection Script - O SINGURA instanta Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        let _sb = null;
-        async function getAdminSupabase() {
-            if (_sb) return _sb;
+        // Singura instanta Supabase din toata pagina
+        let supabaseAdmin = null;
+
+        (async () => {
             const res = await fetch('/api/config');
             const cfg = await res.json();
-            _sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
-            return _sb;
-        }
+            supabaseAdmin = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
 
-        // Verifică sesiunea la load
-        (async () => {
-            const sb = await getAdminSupabase();
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) {
-                window.location.href = 'login.html';
-                return;
-            }
+            const { data: { session } } = await supabaseAdmin.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+
             const role = session.user?.app_metadata?.role || session.user?.user_metadata?.role;
             if (role !== 'admin') {
-                await sb.auth.signOut();
+                await supabaseAdmin.auth.signOut();
                 window.location.href = 'login.html';
                 return;
             }
-            // Afișează emailul
             const el = document.getElementById('admin-username');
             if (el) el.textContent = session.user.email;
         })();
 
         async function logout() {
             if (confirm('Sigur vrei să ieși din Admin Panel?')) {
-                const sb = await getAdminSupabase();
-                await sb.auth.signOut();
+                if (supabaseAdmin) await supabaseAdmin.auth.signOut();
                 window.location.href = 'login.html';
             }
         }
@@ -264,28 +256,24 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../static/config.js"></script>
-    <script src="../static/supabase-service.js"></script>
-
     <script>
-        // Supabase client cu service role key (din /api/admin-config)
-        let supabaseAdmin = null;
-
-        async function initAdminSupabase() {
-            if (supabaseAdmin) return supabaseAdmin;
-            const res = await fetch('/api/admin-config');
-            const cfg = await res.json();
-            supabaseAdmin = supabase.createClient(cfg.supabaseUrl, cfg.supabaseServiceRoleKey);
-            return supabaseAdmin;
-        }
-
         let currentTab = 'filamente';
         let categories = {};
 
-        // Încărcare inițială
+        // supabaseAdmin e setată global de protection script
+
+        // Încărcare inițială - așteaptă până supabaseAdmin e gata
         document.addEventListener('DOMContentLoaded', async () => {
-            await initAdminSupabase();
+            // Poll până supabaseAdmin e setat de protection script
+            let attempts = 0;
+            while (!supabaseAdmin && attempts < 50) {
+                await new Promise(r => setTimeout(r, 100));
+                attempts++;
+            }
+            if (!supabaseAdmin) {
+                console.error('supabaseAdmin not initialized after 5s');
+                return;
+            }
             await loadCategories();
             await loadAllProducts();
         });
@@ -376,7 +364,7 @@
         }
 
         // Switch între tabs
-        function switchTab(tab) {
+        async function switchTab(tab) {
             currentTab = tab;
             
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -384,6 +372,8 @@
             
             event.target.classList.add('active');
             document.getElementById(`${tab}-content`).style.display = 'block';
+
+            if (tab === 'comenzi') await loadOrders();
         }
 
         // Deschide modal pentru adăugare produs
@@ -832,7 +822,6 @@ ${order.notes ? '📝 NOTIȚE:\n' + order.notes : ''}
                 }
 
                 // Save AWB number to Supabase
-                await initAdminSupabase();
                 const { error } = await supabaseAdmin
                     .from('orders')
                     .update({ awb_number: data.awbNumber, status: 'shipped' })

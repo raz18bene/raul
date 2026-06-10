@@ -204,6 +204,7 @@
 
         // Încărcare inițială
         document.addEventListener('DOMContentLoaded', async () => {
+            await ensureSupabaseService();
             // Actualizează coșul
             checkoutService.updateCartUI();
             

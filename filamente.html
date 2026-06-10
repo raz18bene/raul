@@ -190,6 +190,8 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             checkoutService.updateCartUI();
+            // Așteaptă inițializarea Supabase înainte să încarce produsele
+            await ensureSupabaseService();
             await loadProducts();
         });
 

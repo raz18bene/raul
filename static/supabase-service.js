@@ -196,5 +196,14 @@ async function initSupabaseService() {
     return supabaseService;
 }
 
-// Auto-init la încărcare
-initSupabaseService();
+// Auto-init la încărcare - stochează promise-ul ca să nu se apeleze de 2 ori
+let _initPromise = null;
+function ensureSupabaseService() {
+    if (!_initPromise) {
+        _initPromise = initSupabaseService();
+    }
+    return _initPromise;
+}
+
+// Pornește init imediat
+ensureSupabaseService();

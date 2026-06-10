@@ -291,7 +291,7 @@ class CheckoutService {
             };
 
             // 4. Creează comanda în Supabase
-            await initSupabaseService();
+            await ensureSupabaseService();
             const order = await supabaseService.createOrder(orderData);
             console.log('✓ Order created in database');
 
@@ -424,7 +424,7 @@ class CheckoutService {
 
     async getOrderStatus(orderNumber) {
         try {
-            await initSupabaseService();
+            await ensureSupabaseService();
             const order = await supabaseService.getOrderByNumber(orderNumber);
             return {
                 success: true,
