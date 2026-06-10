@@ -1,5 +1,4 @@
 // api/test-integrations.js - Test rapid Oblio + SameDay
-// Accesat doar din admin, șterge acest fișier după ce confirmi că merge
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,19 +22,20 @@ export default async function handler(req, res) {
         results.sameday = { ok: false, message: 'Eroare conexiune ❌', details: e.message };
     }
 
-    // Test Oblio auth
+    // Test Oblio auth - form-urlencoded
     try {
+        const body = new URLSearchParams({
+            client_id: process.env.OBLIO_CLIENT_ID,
+            client_secret: process.env.OBLIO_CLIENT_SECRET,
+            grant_type: 'client_credentials',
+        });
         const r = await fetch('https://www.oblio.eu/api/authorize', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                client_id: process.env.OBLIO_CLIENT_ID,
-                client_secret: process.env.OBLIO_CLIENT_SECRET,
-                grant_type: 'client_credentials'
-            })
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString(),
         });
         const d = await r.json();
-        results.oblio = r.ok
+        results.oblio = (r.ok && d.access_token)
             ? { ok: true, message: 'Autentificare reușită ✅', token_preview: d.access_token?.slice(0,10) + '...' }
             : { ok: false, message: 'Autentificare eșuată ❌', details: d };
     } catch(e) {
