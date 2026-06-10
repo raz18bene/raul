@@ -193,5 +193,22 @@
     </footer>
 
     <script src="static/script.js"></script>
+    <script>
+        // Sync cart count to floating cart
+        (function syncFloatingCart() {
+            function updateFloating() {
+                const mainCount = document.querySelector('.cart-count');
+                const floatCount = document.querySelector('.floating-cart-count');
+                if (mainCount && floatCount) floatCount.textContent = mainCount.textContent;
+            }
+            // Watch for changes
+            const observer = new MutationObserver(updateFloating);
+            setTimeout(() => {
+                const mainCount = document.querySelector('.cart-count');
+                if (mainCount) observer.observe(mainCount, { childList: true, characterData: true, subtree: true });
+                updateFloating();
+            }, 500);
+        })();
+    </script>
 </body>
 </html>

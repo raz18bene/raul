@@ -31,6 +31,10 @@
             <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
         </div>
     </nav>
+    <!-- Floating Cart Mobile -->
+    <a href="checkout.html" class="floating-cart-mobile" id="floating-cart">
+        🛒 <span class="floating-cart-count">0</span>
+    </a>
     <div class="nav-overlay" id="nav-overlay"></div>
     <main class="main-content">
         <div class="legal-page">
@@ -285,5 +289,22 @@
     <script src="static/script.js"></script>
     <script src="static/checkout-service.js"></script>
 <script src="static/cookie-banner.js"></script>
+    <script>
+        // Sync cart count to floating cart
+        (function syncFloatingCart() {
+            function updateFloating() {
+                const mainCount = document.querySelector('.cart-count');
+                const floatCount = document.querySelector('.floating-cart-count');
+                if (mainCount && floatCount) floatCount.textContent = mainCount.textContent;
+            }
+            // Watch for changes
+            const observer = new MutationObserver(updateFloating);
+            setTimeout(() => {
+                const mainCount = document.querySelector('.cart-count');
+                if (mainCount) observer.observe(mainCount, { childList: true, characterData: true, subtree: true });
+                updateFloating();
+            }, 500);
+        })();
+    </script>
 </body>
 </html>
