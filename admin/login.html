@@ -231,7 +231,7 @@
         }
 
         // Handle login form
-        document.getElementById('login-form').addEventListener('submit', function(e) {
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const username = document.getElementById('username').value;
@@ -291,6 +291,6 @@
         `;
         document.head.appendChild(style);
     </script>
-    <script src="static/cookie-banner.js"></script>
+    <!-- cookie-banner not needed in admin -->
 </body>
 </html>
