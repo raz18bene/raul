@@ -4068,3 +4068,214 @@ body.light-mode .logo-corner {
     }
     .product-card { padding: 0.5rem; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE OVERHAUL v3 — Nav, Cart Floating, Logo, Light Mode
+═══════════════════════════════════════════════════════════ */
+
+/* ── Logo text cool (înlocuiește imaginea cu text dacă se dorește) ── */
+.logo-image {
+    height: 48px;
+    width: auto;
+    display: block;
+}
+@media (max-width: 768px) {
+    .logo-image { height: 36px; }
+    .logo-corner {
+        top: 0.6rem !important;
+        left: 0.75rem !important;
+        background: transparent !important;
+        padding: 0 !important;
+    }
+}
+
+/* ── Floating cart — jos dreapta pe mobile ── */
+@media (max-width: 768px) {
+    .cart-icon {
+        position: fixed !important;
+        bottom: 1.25rem !important;
+        right: 1.25rem !important;
+        top: auto !important;
+        left: auto !important;
+        z-index: 999 !important;
+        background: var(--primary) !important;
+        color: #fff !important;
+        border-radius: 50px !important;
+        padding: 0.75rem 1.25rem !important;
+        font-size: 0.95rem !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 20px rgba(249,115,22,0.5) !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.4rem !important;
+        text-decoration: none !important;
+        /* Hide default cart in nav */
+    }
+    .cart-icon .cart-count {
+        background: #fff !important;
+        color: var(--primary) !important;
+        border-radius: 50% !important;
+        width: 20px !important;
+        height: 20px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0.75rem !important;
+        font-weight: 800 !important;
+    }
+    /* Admin button — move up so doesn't overlap cart */
+    .admin-access-btn {
+        bottom: 5rem !important;
+        right: 1.25rem !important;
+    }
+}
+
+/* ── Nav container fix pe mobile ── */
+@media (max-width: 768px) {
+    .nav-container {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        position: relative !important;
+        padding: 0 !important;
+    }
+    /* Theme toggle în nav pe mobile */
+    #theme-toggle {
+        margin-right: 0.5rem !important;
+        padding: 0.35rem 0.6rem !important;
+        font-size: 0.9rem !important;
+        border-radius: 6px !important;
+    }
+    /* Hamburger always visible, right side */
+    .hamburger {
+        display: flex !important;
+        margin-left: 0 !important;
+        flex-shrink: 0 !important;
+    }
+}
+
+/* ── Light mode hamburger fix ── */
+body.light-mode .hamburger span {
+    background: #333 !important;
+    box-shadow: none !important;
+}
+body.light-mode .nav-links {
+    background: rgba(255,255,255,0.98) !important;
+    border-left: 1px solid #ddd !important;
+}
+body.light-mode .nav-link {
+    color: #222 !important;
+    border-bottom-color: rgba(0,0,0,0.08) !important;
+}
+body.light-mode .nav-link:hover,
+body.light-mode .nav-link.active {
+    color: var(--primary) !important;
+    background: rgba(249,115,22,0.05) !important;
+}
+body.light-mode .nav-overlay {
+    background: rgba(0,0,0,0.4) !important;
+}
+
+/* ── Print 3D form fix pe mobile ── */
+@media (max-width: 768px) {
+    #oferta-form {
+        grid-template-columns: 1fr !important;
+    }
+    #oferta-form input,
+    #oferta-form select,
+    #oferta-form textarea,
+    #oferta-form div,
+    #oferta-form button {
+        grid-column: 1 / -1 !important;
+    }
+}
+
+/* ── Products grid pe mobile — fix layout ── */
+@media (max-width: 768px) {
+    .products-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.6rem !important;
+        padding: 0 0.25rem !important;
+    }
+    .product-card {
+        padding: 0.6rem !important;
+        border-radius: 10px !important;
+    }
+    .product-card .product-image {
+        height: 130px !important;
+    }
+    .product-card .product-name {
+        font-size: 0.78rem !important;
+        line-height: 1.3 !important;
+    }
+    .product-card .product-price {
+        font-size: 0.95rem !important;
+        min-height: unset !important;
+    }
+    .product-card .product-description {
+        display: none !important;
+    }
+    .qty-wrapper {
+        flex-direction: column !important;
+        gap: 0.4rem !important;
+    }
+    .qty-controls {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+    .add-to-cart-btn {
+        width: 100% !important;
+        padding: 0.5rem !important;
+        font-size: 0.78rem !important;
+        text-align: center !important;
+    }
+}
+@media (max-width: 380px) {
+    .products-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.4rem !important;
+    }
+    .product-card .product-image { height: 110px !important; }
+    .product-card .product-name { font-size: 0.72rem !important; }
+}
+
+/* ── Filter bar pe mobile ── */
+@media (max-width: 768px) {
+    .filter-bar {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+        padding: 0.75rem !important;
+    }
+    .filter-search,
+    .filter-select {
+        width: 100% !important;
+        min-width: unset !important;
+    }
+}
+
+/* ── Main content padding fix ── */
+@media (max-width: 768px) {
+    .main-content {
+        padding-top: 4.5rem !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+    .page-header {
+        margin-bottom: 1rem !important;
+    }
+    .page-title {
+        font-size: 1.6rem !important;
+    }
+    .page-subtitle {
+        font-size: 0.85rem !important;
+    }
+}
+
+/* ── Light mode nav overlay & menu full fix ── */
+body.light-mode .main-nav {
+    background: rgba(255,255,255,0.97) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1) !important;
+}
+body.light-mode .cart-icon {
+    color: #fff !important;
+}
