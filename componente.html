@@ -65,6 +65,8 @@
                 <option value="price-desc">Preț: mare → mic</option>
                 <option value="name-asc">Nume A-Z</option>
                 <option value="stock">În stoc</option>
+                <option value="name-desc">Nume Z-A</option>
+                <option value="featured">Recomandate primul</option>
             </select>
             <span class="filter-results" id="filter-results"></span>
         </div>
@@ -232,6 +234,12 @@
         function createProductCard(product) {
             const card = document.createElement('div');
             card.className = 'product-card';
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', function(e) {
+                // Don't navigate if clicking buttons/qty controls
+                if (e.target.closest('button') || e.target.closest('.qty-control')) return;
+                window.open('product.html?id=' + product.id, '_blank');
+            });
             
             const inStock = product.stock > 0;
             const lowStock = product.stock > 0 && product.stock <= 10;

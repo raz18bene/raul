@@ -297,6 +297,14 @@
         }
 
         // Încarcă toate produsele pentru toate categoriile
+        // Map între key-urile interne din admin și slug-urile reale din Supabase
+        const SLUG_MAP = {
+            'filamente':  'filamente-3d',
+            'componente': 'componente-electronice',
+            'print3d':    'print-3d',
+            'laser':      'servicii-laser',
+        };
+
         async function loadAllProducts() {
             await loadProductsForCategory('filamente');
             await loadProductsForCategory('componente');
@@ -305,14 +313,17 @@
         }
 
         // Încarcă produsele pentru o categorie
-        async function loadProductsForCategory(categorySlug) {
-            const category = categories[categorySlug];
+        async function loadProductsForCategory(categoryKey) {
+            const dbSlug = SLUG_MAP[categoryKey] || categoryKey;
+            // Caută după slug real sau după key
+            const category = categories[dbSlug] || categories[categoryKey];
             if (!category) {
-                console.warn(`Categoria ${categorySlug} nu există în baza de date`);
-                document.getElementById(`${categorySlug}-products-list`).innerHTML = 
-                    `<p style="color: var(--error);">⚠️ Categoria "${categorySlug}" nu a fost găsită. Adaugă-o în baza de date.</p>`;
+                console.warn(`Categoria ${dbSlug} nu există în baza de date`);
+                document.getElementById(`${categoryKey}-products-list`).innerHTML = 
+                    `<p style="color: var(--error);">⚠️ Categoria "${dbSlug}" nu a fost găsită în Supabase. Verifică tabelul categories.</p>`;
                 return;
             }
+            const categorySlug = categoryKey;
 
             try {
                 const { data, error } = await supabaseAdmin
@@ -445,10 +456,11 @@
             
             const productId = document.getElementById('product-id').value;
             const categorySlug = document.getElementById('product-category-slug').value;
-            const category = categories[categorySlug];
+            const dbSlug = SLUG_MAP[categorySlug] || categorySlug;
+            const category = categories[dbSlug] || categories[categorySlug];
             
             if (!category) {
-                alert('Categoria nu a fost găsită!');
+                alert('Categoria nu a fost găsită! Slug cautat: ' + dbSlug);
                 return;
             }
             
