@@ -4279,3 +4279,53 @@ body.light-mode .main-nav {
 body.light-mode .cart-icon {
     color: #fff !important;
 }
+
+/* ═══ FLOATING CART FIX — override toate regulile ═══ */
+@media (max-width: 768px) {
+    a.cart-icon,
+    .cart-icon {
+        position: fixed !important;
+        bottom: 1.25rem !important;
+        right: 1.25rem !important;
+        top: auto !important;
+        left: auto !important;
+        z-index: 9999 !important;
+        width: auto !important;
+        height: auto !important;
+        transform: none !important;
+        margin: 0 !important;
+        padding: 0.75rem 1.25rem !important;
+        border-radius: 50px !important;
+        background: var(--primary) !important;
+        background-image: none !important;
+        color: #fff !important;
+        font-size: 0.95rem !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 20px rgba(249,115,22,0.5) !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.4rem !important;
+        text-decoration: none !important;
+    }
+    a.cart-icon .cart-count,
+    .cart-icon .cart-count {
+        position: static !important;
+        background: #fff !important;
+        color: var(--primary) !important;
+        border-radius: 50% !important;
+        width: 20px !important;
+        height: 20px !important;
+        min-width: 20px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0.75rem !important;
+        font-weight: 800 !important;
+        top: auto !important;
+        right: auto !important;
+    }
+    .admin-access-btn {
+        bottom: 5rem !important;
+        right: 1.25rem !important;
+    }
+}
