@@ -9,7 +9,7 @@ async function getOblioToken() {
         grant_type: 'client_credentials',
     });
 
-    const res = await fetch('https://www.oblio.eu/api/authorize', {
+    const res = await fetch('https://www.oblio.eu/api/authorize/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: body.toString(),

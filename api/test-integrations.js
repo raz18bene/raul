@@ -29,7 +29,7 @@ export default async function handler(req, res) {
             client_secret: process.env.OBLIO_CLIENT_SECRET,
             grant_type: 'client_credentials',
         });
-        const r = await fetch('https://www.oblio.eu/api/authorize', {
+        const r = await fetch('https://www.oblio.eu/api/authorize/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: body.toString(),
