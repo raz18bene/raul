@@ -80,10 +80,26 @@ export default async function handler(req, res) {
         // Matching: 1) dupa SKU daca exista, 2) fallback dupa nume normalizat (si completeaza SKU)
         if (action === 'sync-stock') {
             const r = await fetch(`https://www.oblio.eu/api/nomenclature/products?cif=${encodeURIComponent(cif)}&limitPerPage=250`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                }
             });
-            const d = await r.json();
-            if (!r.ok || !d.data) return res.status(400).json({ error: 'Oblio error', details: d });
+
+            const rawText = await r.text();
+            let d;
+            try {
+                d = JSON.parse(rawText);
+            } catch {
+                return res.status(400).json({
+                    error: 'Oblio a returnat un raspuns invalid (nu JSON)',
+                    status: r.status,
+                    cif_used: cif,
+                    raw_response: rawText.slice(0, 500),
+                });
+            }
+
+            if (!r.ok || !d.data) return res.status(400).json({ error: 'Oblio error', details: d, cif_used: cif });
 
             const supabase = createClient(
                 process.env.SUPABASE_URL,

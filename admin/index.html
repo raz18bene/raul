@@ -1172,7 +1172,11 @@ ${order.notes ? '📝 NOTIȚE:\n' + order.notes : ''}
                 const data = await res.json();
 
                 if (!res.ok || !data.success) {
-                    throw new Error(data.error || JSON.stringify(data.details || 'Eroare necunoscuta'));
+                    let errMsg = data.error || 'Eroare necunoscuta';
+                    if (data.raw_response) errMsg += `\n\nRaspuns Oblio (status ${data.status}, CIF folosit: ${data.cif_used}):\n${data.raw_response}`;
+                    if (data.details) errMsg += `\nDetalii: ${JSON.stringify(data.details)}`;
+                    if (data.cif_used) errMsg += `\nCIF folosit: ${data.cif_used}`;
+                    throw new Error(errMsg);
                 }
 
                 let msg = `✅ Sincronizare completă!\n\n`;
