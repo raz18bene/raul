@@ -1182,12 +1182,17 @@ ${order.notes ? '📝 NOTIȚE:\n' + order.notes : ''}
                 if (data.updated.length > 0) {
                     msg += `\n--- Stocuri actualizate ---\n`;
                     data.updated.forEach(u => {
-                        msg += `${u.name} (${u.sku}): ${u.oldStock} → ${u.newStock}\n`;
+                        const tag = u.matchedBy === 'nume' ? ' [match după nume]' : '';
+                        const skuInfo = u.skuSet ? ` | SKU completat: ${u.skuSet}` : '';
+                        msg += `${u.name}${tag}: ${u.oldStock ?? '-'} → ${u.newStock}${skuInfo}\n`;
                     });
                 }
 
                 if (data.not_found_in_supabase.length > 0) {
-                    msg += `\n⚠️ ${data.not_found_in_supabase.length} produse din Oblio nu au fost găsite în Supabase (verifică SKU-urile).`;
+                    msg += `\n⚠️ ${data.not_found_in_supabase.length} produse din Oblio nu au fost găsite în Supabase (nici după SKU, nici după nume):\n`;
+                    data.not_found_in_supabase.slice(0, 10).forEach(p => {
+                        msg += `  - ${p.name} (cod: ${p.code || 'fără cod'})\n`;
+                    });
                 }
 
                 alert(msg);

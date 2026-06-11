@@ -76,7 +76,8 @@ export default async function handler(req, res) {
         }
 
         // GET /api/oblio?action=sync-stock
-        // Aduce stocurile reale din Oblio si le actualizeaza in Supabase (matching dupa SKU/code)
+        // Aduce stocurile din Oblio si le actualizeaza in Supabase
+        // Matching: 1) dupa SKU daca exista, 2) fallback dupa nume normalizat (si completeaza SKU)
         if (action === 'sync-stock') {
             const r = await fetch(`https://www.oblio.eu/api/nomenclature/products?cif=${encodeURIComponent(cif)}&limitPerPage=250`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -95,33 +96,70 @@ export default async function handler(req, res) {
 
             if (prodErr) return res.status(500).json({ error: 'Supabase error', details: prodErr });
 
+            const normalize = (s) => (s || '')
+                .toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // diacritice
+                .replace(/[^a-z0-9]+/g, ' ')
+                .trim();
+
             const updated = [];
             const notFound = [];
+            const usedIds = new Set();
 
             for (const oblioProduct of d.data) {
                 const code = (oblioProduct.code || '').trim();
-                if (!code) continue; // fara SKU nu putem face matching sigur
+                const oblioName = oblioProduct.name || '';
 
                 // Calculeaza stocul total din toate gestiunile
                 let totalStock = 0;
                 if (Array.isArray(oblioProduct.stock)) {
                     totalStock = oblioProduct.stock.reduce((sum, s) => sum + (parseFloat(s.quantity) || 0), 0);
+                } else {
+                    continue; // produs fara info de stoc (ex: serviciu) - sarim
                 }
 
-                const match = products.find(p => (p.sku || '').trim() === code);
+                let match = null;
+                let matchedBy = '';
+
+                // 1. Match dupa SKU (daca exista cod in Oblio)
+                if (code) {
+                    match = products.find(p => !usedIds.has(p.id) && (p.sku || '').trim() === code);
+                    if (match) matchedBy = 'sku';
+                }
+
+                // 2. Fallback: match dupa nume normalizat
                 if (!match) {
-                    notFound.push({ code, name: oblioProduct.name });
+                    const normOblio = normalize(oblioName);
+                    match = products.find(p => !usedIds.has(p.id) && normalize(p.name) === normOblio);
+                    if (match) matchedBy = 'nume';
+                }
+
+                if (!match) {
+                    notFound.push({ code, name: oblioName, stock: totalStock });
                     continue;
                 }
 
-                if (match.stock !== totalStock) {
+                usedIds.add(match.id);
+
+                const updates = {};
+                if (match.stock !== totalStock) updates.stock = totalStock;
+                // Daca am gasit dupa nume si nu are SKU, completam SKU-ul din Oblio
+                if (matchedBy === 'nume' && code && !(match.sku || '').trim()) updates.sku = code;
+
+                if (Object.keys(updates).length > 0) {
                     const { error: updErr } = await supabase
                         .from('products')
-                        .update({ stock: totalStock })
+                        .update(updates)
                         .eq('id', match.id);
 
                     if (!updErr) {
-                        updated.push({ sku: code, name: match.name, oldStock: match.stock, newStock: totalStock });
+                        updated.push({
+                            name: match.name,
+                            matchedBy,
+                            oldStock: match.stock,
+                            newStock: totalStock,
+                            skuSet: updates.sku || null,
+                        });
                     }
                 }
             }
