@@ -118,10 +118,11 @@ export default async function handler(req, res) {
                 .replace(/[^a-z0-9]+/g, ' ')
                 .trim();
 
-            const updated = [];
             const notFound = [];
             const usedIds = new Set();
+            const pendingUpdates = []; // { id, updates, info }
 
+            // Pas 1: matching (rapid, fara IO)
             for (const oblioProduct of d.data) {
                 const code = (oblioProduct.code || '').trim();
                 const oblioName = oblioProduct.name || '';
@@ -159,25 +160,35 @@ export default async function handler(req, res) {
 
                 const updates = {};
                 if (match.stock !== totalStock) updates.stock = totalStock;
-                // Daca am gasit dupa nume si nu are SKU, completam SKU-ul din Oblio
                 if (matchedBy === 'nume' && code && !(match.sku || '').trim()) updates.sku = code;
 
                 if (Object.keys(updates).length > 0) {
-                    const { error: updErr } = await supabase
-                        .from('products')
-                        .update(updates)
-                        .eq('id', match.id);
-
-                    if (!updErr) {
-                        updated.push({
+                    pendingUpdates.push({
+                        id: match.id,
+                        updates,
+                        info: {
                             name: match.name,
                             matchedBy,
                             oldStock: match.stock,
                             newStock: totalStock,
                             skuSet: updates.sku || null,
-                        });
-                    }
+                        }
+                    });
                 }
+            }
+
+            // Pas 2: toate update-urile in paralel (in batch-uri de 20 ca sa nu suprasolicitam)
+            const updated = [];
+            const BATCH_SIZE = 20;
+            for (let i = 0; i < pendingUpdates.length; i += BATCH_SIZE) {
+                const batch = pendingUpdates.slice(i, i + BATCH_SIZE);
+                const results = await Promise.all(batch.map(item =>
+                    supabase.from('products').update(item.updates).eq('id', item.id)
+                        .then(({ error }) => ({ error, info: item.info }))
+                ));
+                results.forEach(({ error, info }) => {
+                    if (!error) updated.push(info);
+                });
             }
 
             return res.status(200).json({
