@@ -79,27 +79,45 @@ export default async function handler(req, res) {
         // Aduce stocurile din Oblio si le actualizeaza in Supabase
         // Matching: 1) dupa SKU daca exista, 2) fallback dupa nume normalizat (si completeaza SKU)
         if (action === 'sync-stock') {
-            const r = await fetch(`https://www.oblio.eu/api/nomenclature/products?cif=${encodeURIComponent(cif)}&limitPerPage=250`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                }
-            });
+            // Paginare completa - Oblio limiteaza la max 250/pagina
+            const LIMIT = 250;
+            let allOblioProducts = [];
+            let offset = 0;
+            let pageCount = 0;
 
-            const rawText = await r.text();
-            let d;
-            try {
-                d = JSON.parse(rawText);
-            } catch {
-                return res.status(400).json({
-                    error: 'Oblio a returnat un raspuns invalid (nu JSON)',
-                    status: r.status,
-                    cif_used: cif,
-                    raw_response: rawText.slice(0, 500),
+            while (true) {
+                const r = await fetch(`https://www.oblio.eu/api/nomenclature/products?cif=${encodeURIComponent(cif)}&limitPerPage=${LIMIT}&offset=${offset}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    }
                 });
+
+                const rawText = await r.text();
+                let pageData;
+                try {
+                    pageData = JSON.parse(rawText);
+                } catch {
+                    return res.status(400).json({
+                        error: 'Oblio a returnat un raspuns invalid (nu JSON)',
+                        status: r.status,
+                        cif_used: cif,
+                        raw_response: rawText.slice(0, 500),
+                    });
+                }
+
+                if (!r.ok || !pageData.data) {
+                    return res.status(400).json({ error: 'Oblio error', details: pageData, cif_used: cif });
+                }
+
+                allOblioProducts = allOblioProducts.concat(pageData.data);
+                pageCount++;
+
+                if (pageData.data.length < LIMIT || pageCount > 10) break; // siguranta: max 10 pagini = 2500 produse
+                offset += LIMIT;
             }
 
-            if (!r.ok || !d.data) return res.status(400).json({ error: 'Oblio error', details: d, cif_used: cif });
+            const d = { data: allOblioProducts };
 
             const supabase = createClient(
                 process.env.SUPABASE_URL,
