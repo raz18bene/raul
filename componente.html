@@ -219,7 +219,58 @@
             }
         }
 
+        function filterProducts() {
+            const search = (document.getElementById('search-input')?.value || '').toLowerCase();
+            const sort   = document.getElementById('sort-select')?.value || 'default';
+            const material     = document.getElementById('filter-material')?.value?.toLowerCase() || 'all';
+            const availability = document.getElementById('filter-availability')?.value || 'all';
+            const category2    = document.getElementById('filter-category')?.value?.toLowerCase() || 'all';
 
+            let result = allProducts.filter(p => {
+                const name = (p.name || '').toLowerCase();
+                const desc = (p.description || '').toLowerCase();
+                const tags = ((p.tags || []).join(' ')).toLowerCase();
+
+                if (search && !name.includes(search) && !desc.includes(search) && !tags.includes(search)) return false;
+                if (material !== 'all' && !name.includes(material) && !(tags.includes(material))) return false;
+
+                const stockVal = parseFloat(p.stock) || 0;
+                if (availability === 'in-stock'  && stockVal <= 0)  return false;
+                if (availability === 'low-stock' && (stockVal <= 0 || stockVal > 10)) return false;
+                if (category2 !== 'all' && (p.subcategory || '').toLowerCase() !== category2) return false;
+                return true;
+            });
+
+            // Sort - cu parsare numerica defensiva
+            const priceOf = (p) => parseFloat(p.sale_price ?? p.price) || 0;
+            const stockOf = (p) => parseFloat(p.stock) || 0;
+
+            if (sort === 'price-asc')  result.sort((a,b) => priceOf(a) - priceOf(b));
+            if (sort === 'price-desc') result.sort((a,b) => priceOf(b) - priceOf(a));
+            if (sort === 'name-asc')   result.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+            if (sort === 'name-desc')  result.sort((a,b) => (b.name||'').localeCompare(a.name||''));
+            if (sort === 'stock')      result.sort((a,b) => stockOf(b) - stockOf(a));
+            if (sort === 'featured')   result.sort((a,b) => (b.featured?1:0) - (a.featured?1:0));
+
+            filteredProducts = result;
+
+            const emptyState   = document.getElementById('empty-state');
+            const productsGrid = document.getElementById('products-grid');
+            const resultsEl    = document.getElementById('filter-results');
+
+            if (resultsEl) resultsEl.textContent = result.length > 0 ? `${result.length} produse găsite` : '';
+
+            if (result.length === 0) {
+                emptyState.style.display = 'flex';
+                productsGrid.style.display = 'none';
+            } else {
+                emptyState.style.display = 'none';
+                productsGrid.style.display = 'grid';
+                renderProducts(result);
+            }
+        }
+
+        function applyFilters() { filterProducts(); }
 
         function renderProducts(products) {
             const productsGrid = document.getElementById('products-grid');

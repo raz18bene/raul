@@ -4385,3 +4385,108 @@ body.light-mode .cart-icon {
         right: 1.5rem !important;
     }
 }
+
+/* ═══════════════════════════════════════════════
+   LIGHT MODE - FIX COMPLET 1:1 CU DARK MODE
+═══════════════════════════════════════════════ */
+
+/* Overlay pentru modale, footer, meniu mobil */
+body.light-mode {
+    --bg-overlay: rgba(255, 255, 255, 0.97);
+}
+
+/* Navbar - era hardcodat rgba(10,14,39,...) */
+body.light-mode .main-nav {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(12px);
+}
+
+/* Inputuri / select / textarea din formulare (checkout, contact) */
+body.light-mode .form-group input,
+body.light-mode .form-group select,
+body.light-mode .form-group textarea {
+    background: #ffffff !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+}
+body.light-mode .form-group input::placeholder,
+body.light-mode .form-group textarea::placeholder {
+    color: #999 !important;
+}
+
+/* Footer rămâne dark (contrast intenționat) - deja ok */
+
+/* Modal-content (admin / produse) */
+body.light-mode .modal-content {
+    background: #ffffff !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border);
+}
+
+/* Accordion / payment-method-card / shipping-option / radio-card */
+body.light-mode .accordion-content,
+body.light-mode .payment-method-card,
+body.light-mode .radio-card-content {
+    background: #ffffff !important;
+    border-color: var(--border) !important;
+}
+body.light-mode .accordion-header {
+    background: #ffffff !important;
+    color: var(--text-primary) !important;
+}
+
+/* Order summary / sidebar cards in checkout */
+body.light-mode .order-summary,
+body.light-mode .checkout-section,
+body.light-mode .summary-row {
+    background: #ffffff !important;
+    color: var(--text-primary) !important;
+}
+
+/* Badge-uri / etichete cu text alb pe fundal deschis - asigura contrast */
+body.light-mode .badge {
+    color: #ffffff !important;
+}
+
+/* Product page - specs table & description */
+body.light-mode .specs-table td {
+    border-bottom-color: var(--border) !important;
+}
+
+/* Filter bar / search / select - background corect */
+body.light-mode .filter-bar,
+body.light-mode .filters-bar {
+    background: #ffffff !important;
+    border: 1px solid var(--border);
+}
+
+/* Empty state icon box */
+body.light-mode .empty-state {
+    color: var(--text-secondary) !important;
+}
+
+/* Cookie banner */
+body.light-mode #cookie-banner {
+    background: #ffffff !important;
+    color: var(--text-primary) !important;
+    border-top: 1px solid var(--border) !important;
+}
+
+/* Scroll-to-top / floating buttons text contrast */
+body.light-mode .admin-access-btn,
+body.light-mode .floating-cart {
+    color: #ffffff !important;
+}
+
+/* Linkuri footer raman pe fundal dark - text alb e ok, nu se schimba */
+
+/* Tabele specificatii produs / admin */
+body.light-mode table {
+    color: var(--text-primary);
+}
+
+/* Theme toggle button - contrast corect */
+body.light-mode #theme-toggle {
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}

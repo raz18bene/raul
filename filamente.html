@@ -249,18 +249,22 @@ function filterProducts() {
 
                 if (search && !name.includes(search) && !desc.includes(search) && !tags.includes(search)) return false;
                 if (material !== 'all' && !name.includes(material) && !(tags.includes(material))) return false;
-                if (availability === 'in-stock'  && p.stock <= 0)  return false;
-                if (availability === 'low-stock' && (p.stock <= 0 || p.stock > 10)) return false;
+                const stockVal = parseFloat(p.stock) || 0;
+                if (availability === 'in-stock'  && stockVal <= 0)  return false;
+                if (availability === 'low-stock' && (stockVal <= 0 || stockVal > 10)) return false;
                 if (category2 !== 'all' && (p.subcategory || '').toLowerCase() !== category2) return false;
                 return true;
             });
 
-            // Sort
-            if (sort === 'price-asc')  result.sort((a,b) => (a.sale_price||a.price) - (b.sale_price||b.price));
-            if (sort === 'price-desc') result.sort((a,b) => (b.sale_price||b.price) - (a.sale_price||a.price));
-            if (sort === 'name-asc')   result.sort((a,b) => a.name.localeCompare(b.name));
-            if (sort === 'name-desc')  result.sort((a,b) => b.name.localeCompare(a.name));
-            if (sort === 'stock')      result.sort((a,b) => b.stock - a.stock);
+            // Sort - cu parsare numerica defensiva (Postgres poate returna numeric ca string)
+            const priceOf = (p) => parseFloat(p.sale_price ?? p.price) || 0;
+            const stockOf = (p) => parseFloat(p.stock) || 0;
+
+            if (sort === 'price-asc')  result.sort((a,b) => priceOf(a) - priceOf(b));
+            if (sort === 'price-desc') result.sort((a,b) => priceOf(b) - priceOf(a));
+            if (sort === 'name-asc')   result.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+            if (sort === 'name-desc')  result.sort((a,b) => (b.name||'').localeCompare(a.name||''));
+            if (sort === 'stock')      result.sort((a,b) => stockOf(b) - stockOf(a));
             if (sort === 'featured')   result.sort((a,b) => (b.featured?1:0) - (a.featured?1:0));
 
             filteredProducts = result;

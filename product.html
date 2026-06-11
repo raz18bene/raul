@@ -11,7 +11,7 @@
     <style>
         .product-page { max-width: 1100px; margin: 6rem auto 4rem; padding: 0 2rem; }
         .product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; }
-        .product-gallery { position: sticky; top: 6rem; }
+        .product-gallery { position: static; }
         .main-image { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 16px; border: 1px solid var(--border); background: var(--bg-card); }
         .thumb-row { display: flex; gap: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap; }
         .thumb { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); cursor: pointer; transition: border-color 0.2s; }
@@ -25,7 +25,7 @@
         .stock-ok { background: rgba(34,197,94,0.15); color: #22c55e; }
         .stock-low { background: rgba(255,152,0,0.15); color: #ff9800; }
         .stock-out { background: rgba(239,68,68,0.15); color: #ef4444; }
-        .description { color: var(--text-secondary); line-height: 1.7; margin-bottom: 2rem; font-size: 1rem; }
+        .description { color: var(--text-secondary); line-height: 1.7; margin: 1.25rem 0; font-size: 1rem; }
         .qty-add { display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem; flex-wrap: wrap; }
         .qty-control { display: flex; align-items: center; border: 2px solid var(--border); border-radius: 10px; overflow: hidden; }
         .qty-control button { width: 42px; height: 48px; background: var(--bg-card); border: none; color: var(--text-primary); font-size: 1.3rem; cursor: pointer; transition: background 0.2s; }
@@ -86,6 +86,14 @@
             <div class="product-gallery">
                 <img id="main-img" class="main-image" src="" alt="">
                 <div class="thumb-row" id="thumb-row"></div>
+
+                <!-- Descriere - sub poza -->
+                <p class="description" id="prod-desc"></p>
+
+                <div id="specs-block" style="display:none;">
+                    <div class="section-title">Specificații</div>
+                    <table class="specs-table" id="specs-table"></table>
+                </div>
             </div>
 
             <!-- Detalii -->
@@ -100,13 +108,6 @@
 
                 <div id="stock-badge" class="stock-badge stock-ok"></div>
 
-                <p class="description" id="prod-desc"></p>
-
-                <div id="specs-block" style="display:none;">
-                    <div class="section-title">Specificații</div>
-                    <table class="specs-table" id="specs-table"></table>
-                </div>
-
                 <div class="qty-add" id="qty-add-block">
                     <div class="qty-control">
                         <button onclick="changeQty(-1)">−</button>
@@ -117,6 +118,11 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="recommended-section" style="display:none;margin-top:3rem;">
+        <h2 class="section-title" style="font-size:1.4rem;">Produse Recomandate</h2>
+        <div id="recommended-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1.25rem;margin-top:1rem;"></div>
     </div>
 
     <div id="error-state" style="display:none;text-align:center;padding:4rem;color:var(--text-secondary);">
@@ -201,6 +207,43 @@
 
         document.getElementById('loading-state').style.display = 'none';
         document.getElementById('product-content').style.display = 'block';
+
+        // Produse recomandate
+        if (p.recommended_ids && p.recommended_ids.length > 0) {
+            loadRecommended(p.recommended_ids);
+        }
+    }
+
+    async function loadRecommended(ids) {
+        try {
+            const { data, error } = await supabaseService.client
+                .from('products')
+                .select('*')
+                .in('id', ids)
+                .eq('is_active', true);
+
+            if (error || !data || !data.length) return;
+
+            const grid = document.getElementById('recommended-grid');
+            grid.innerHTML = data.map(prod => {
+                const img = (prod.images && prod.images[0]) || 'https://via.placeholder.com/300x300?text=TechNest';
+                const price = prod.sale_price || prod.price;
+                return `
+                <a href="product.html?id=${prod.id}" style="text-decoration:none;color:inherit;display:block;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:transform 0.2s,border-color 0.2s;" 
+                   onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='var(--primary)'" 
+                   onmouseout="this.style.transform='';this.style.borderColor='var(--border)'">
+                    <img src="${img}" alt="${prod.name}" style="width:100%;aspect-ratio:1;object-fit:cover;" onerror="this.src='https://via.placeholder.com/300x300'">
+                    <div style="padding:0.75rem;">
+                        <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:0.3rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${prod.name}</div>
+                        <div style="color:var(--primary);font-weight:700;">${price.toFixed(2)} RON</div>
+                    </div>
+                </a>`;
+            }).join('');
+
+            document.getElementById('recommended-section').style.display = 'block';
+        } catch(e) {
+            console.error('Recommended products error:', e);
+        }
     }
 
     function setMainImage(thumb, src) {

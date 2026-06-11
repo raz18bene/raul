@@ -666,41 +666,31 @@
                                     <div class="form-group" style="margin-bottom:1.5rem;">
                                         <label style="font-weight:600;margin-bottom:0.75rem;display:block;">Metodă de livrare *</label>
                                         <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-                                            <label class="shipping-option" id="opt-sameday" onclick="selectShipping('sameday')" style="flex:1;min-width:160px;border:2px solid var(--primary);border-radius:12px;padding:1rem;cursor:pointer;background:rgba(0,217,255,0.07);transition:all 0.2s;">
+                                            <label class="shipping-option" id="opt-sameday" onclick="selectShipping('sameday')" style="flex:1;min-width:180px;border:2px solid var(--primary);border-radius:12px;padding:1rem;cursor:pointer;background:rgba(0,217,255,0.07);transition:all 0.2s;">
                                                 <div style="display:flex;align-items:center;gap:0.6rem;">
                                                     <input type="radio" name="shipping-method" value="sameday" checked style="accent-color:var(--primary);">
                                                     <div>
-                                                        <strong style="display:block;">🚚 SameDay Courier</strong>
-                                                        <span style="color:var(--text-secondary);font-size:0.85rem;">Livrare în 24-48h</span>
+                                                        <strong style="display:block;">🚚 Livrare SameDay</strong>
+                                                        <span style="color:var(--text-secondary);font-size:0.85rem;">Livrare în 24-48h, oriunde în țară</span>
                                                     </div>
                                                 </div>
                                                 <div style="margin-top:0.5rem;font-size:1.1rem;font-weight:700;color:var(--primary);">20,00 RON</div>
                                             </label>
-                                            <label class="shipping-option" id="opt-pickup" onclick="selectShipping('pickup')" style="flex:1;min-width:160px;border:2px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:all 0.2s;">
-                                                <div style="display:flex;align-items:center;gap:0.6rem;">
-                                                    <input type="radio" name="shipping-method" value="pickup" style="accent-color:var(--primary);">
-                                                    <div>
-                                                        <strong style="display:block;">🏪 Ridicare din magazin</strong>
-                                                        <span style="color:var(--text-secondary);font-size:0.85rem;">Timișoara — program L-V 9-18</span>
-                                                    </div>
-                                                </div>
-                                                <div style="margin-top:0.5rem;font-size:1.1rem;font-weight:700;color:#22c55e;">GRATUIT</div>
-                                            </label>
-                                            <label class="shipping-option" id="opt-sediu" onclick="selectShipping('sediu')" style="flex:1;min-width:160px;border:2px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:all 0.2s;">
+                                            <label class="shipping-option" id="opt-sediu" onclick="selectShipping('sediu')" style="flex:1;min-width:180px;border:2px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:all 0.2s;">
                                                 <div style="display:flex;align-items:center;gap:0.6rem;">
                                                     <input type="radio" name="shipping-method" value="sediu" style="accent-color:var(--primary);">
                                                     <div>
-                                                        <strong style="display:block;">🏢 Plată la sediu</strong>
-                                                        <span style="color:var(--text-secondary);font-size:0.85rem;">Vii, platești și ridici</span>
+                                                        <strong style="display:block;">🏢 Ridicare de la sediu</strong>
+                                                        <span style="color:var(--text-secondary);font-size:0.85rem;">Vii personal și ridici comanda</span>
                                                     </div>
                                                 </div>
                                                 <div style="margin-top:0.5rem;font-size:1.1rem;font-weight:700;color:#22c55e;">GRATUIT</div>
                                             </label>
                                         </div>
-                                        <!-- Info sediu - apare doar la pickup/sediu -->
+                                        <!-- Info sediu - apare doar la ridicare -->
                                         <div id="sediu-info" style="display:none;margin-top:1rem;padding:1rem;background:rgba(0,217,255,0.05);border:1px solid var(--border);border-radius:10px;font-size:0.9rem;color:var(--text-secondary);">
                                             📍 <strong style="color:var(--text-primary);">Adresa sediu:</strong> Timișoara, 3 August 1919, nr. 21<br>
-                                            🕐 <strong style="color:var(--text-primary);">Program:</strong> Luni–Vineri 09:00–18:00<br>
+                                            🕐 <strong style="color:var(--text-primary);">Program:</strong> Luni–Vineri 16:00–22:00<br>
                                             📞 <strong style="color:var(--text-primary);">Telefon:</strong> Contactează-ne înainte de vizită
                                         </div>
                                     </div>
@@ -812,8 +802,8 @@
             </div>
             <div class="footer-section">
                 <h4>Contact</h4>
-                <p>Email: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="61020e0f1500021521150402090d00034f130e">[email&#160;protected]</a></p>
-                <p>Tel: +40 123 456 789</p>
+                <p>Email: <a href="mailto:technest.prototyping@gmail.com">technest.prototyping@gmail.com</a></p>
+                <p>Tel: 0754 545 800 / 0760 115 729</p>
             </div>
         </div>
         <div class="footer-bottom">
@@ -886,7 +876,7 @@
             // Renderează sumar
             const subtotal = checkoutService.getCartTotal();
             const shippingMethod = document.querySelector('input[name="shipping-method"]:checked')?.value || 'sameday';
-            const shipping = (shippingMethod === 'pickup' || shippingMethod === 'sediu') ? 0 : 20;
+            const shipping = (shippingMethod === 'sediu') ? 0 : 20;
             const total = subtotal + shipping;
 
             orderSummary.innerHTML = `
@@ -928,28 +918,18 @@
                             </div>
                         </label>
                         <label class="payment-method-option" id="pay-opt-cash">
-                            <input type="radio" name="payment-method" value="cash">
+                            <input type="radio" name="payment-method" value="ramburs">
                             <div class="payment-method-card">
                                 <div class="payment-method-icon">💵</div>
                                 <div class="payment-method-details">
-                                    <strong>Numerar / POS</strong>
-                                    <p>La livrare sau la sediu</p>
-                                </div>
-                            </div>
-                        </label>
-                        <label class="payment-method-option" id="pay-opt-pos-sediu" style="display:none;">
-                            <input type="radio" name="payment-method" value="pos-sediu">
-                            <div class="payment-method-card">
-                                <div class="payment-method-icon">🏢</div>
-                                <div class="payment-method-details">
-                                    <strong>POS la sediu</strong>
-                                    <p>Card fizic la magazin</p>
+                                    <strong id="ramburs-title">Ramburs (Numerar/POS)</strong>
+                                    <p id="ramburs-desc">La livrare prin curier</p>
                                 </div>
                             </div>
                         </label>
                     </div>
                     <div id="sediu-payment-note" style="display:none;margin-top:0.75rem;padding:0.75rem 1rem;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:8px;font-size:0.9rem;color:var(--text-secondary);">
-                        💡 La ridicare/sediu poți plăti cu <strong style="color:var(--text-primary);">numerar sau card POS</strong> direct la magazin.
+                        💡 La ridicarea de la sediu poți plăti cu <strong style="color:var(--text-primary);">numerar sau card (POS)</strong> direct la magazin.
                     </div>
                 </div>
                 <button class="btn btn-primary" style="width: 100%; margin-top: 2rem; padding: 1rem;" onclick="finalizeOrder()">
@@ -1076,7 +1056,7 @@
             customerData.paymentMethod = paymentMethod;
             customerData.shippingMethod = document.querySelector('input[name="shipping-method"]:checked')?.value || 'sameday';
             customerData.weight = parseFloat(document.getElementById('customer-weight')?.value || 1);
-            customerData.shippingCost = (customerData.shippingMethod === 'pickup' || customerData.shippingMethod === 'sediu') ? 0 : 20;
+            customerData.shippingCost = (customerData.shippingMethod === 'sediu') ? 0 : 20;
             
             checkoutService.processOrder(customerData)
                 .then(orderResult => {
@@ -1214,15 +1194,14 @@
             const addrBlock  = document.getElementById('delivery-address-block');
             const sediuInfo  = document.getElementById('sediu-info');
             const optSameday = document.getElementById('opt-sameday');
-            const optPickup  = document.getElementById('opt-pickup');
             const optSediu   = document.getElementById('opt-sediu');
             const addressInput = document.getElementById('customer-address');
             const cityInput    = document.getElementById('customer-city');
             const countyInput  = document.getElementById('customer-county');
             const postalInput  = document.getElementById('customer-postal');
 
-            // Reset all borders
-            [optSameday, optPickup, optSediu].forEach(el => {
+            // Reset borders
+            [optSameday, optSediu].forEach(el => {
                 if (el) { el.style.borderColor = 'var(--border)'; el.style.background = ''; }
             });
 
@@ -1233,11 +1212,6 @@
                 if (sediuInfo) sediuInfo.style.display = 'none';
                 Object.assign(optSameday.style, activeStyle);
                 [addressInput, cityInput, countyInput, postalInput].forEach(el => { if(el) el.setAttribute('required', ''); });
-            } else if (method === 'pickup') {
-                addrBlock.style.display = 'none';
-                if (sediuInfo) sediuInfo.style.display = 'block';
-                Object.assign(optPickup.style, activeStyle);
-                [addressInput, cityInput, countyInput, postalInput].forEach(el => { if(el) el.removeAttribute('required'); });
             } else if (method === 'sediu') {
                 addrBlock.style.display = 'none';
                 if (sediuInfo) sediuInfo.style.display = 'block';
@@ -1250,20 +1224,30 @@
         }
 
         function updatePaymentMethodsForShipping(method) {
-            const isLocal = method === 'pickup' || method === 'sediu';
-            const cardOpt    = document.getElementById('pay-opt-card');
-            const posOpt     = document.getElementById('pay-opt-pos-sediu');
-            const note       = document.getElementById('sediu-payment-note');
+            const isSediu = method === 'sediu';
+            const cardOpt   = document.getElementById('pay-opt-card');
+            const note      = document.getElementById('sediu-payment-note');
+            const ramTitle  = document.getElementById('ramburs-title');
+            const ramDesc   = document.getElementById('ramburs-desc');
 
-            if (cardOpt)  cardOpt.style.display  = isLocal ? 'none' : '';
-            if (posOpt)   posOpt.style.display    = isLocal ? '' : 'none';
-            if (note)     note.style.display      = isLocal ? 'block' : 'none';
+            if (cardOpt) cardOpt.style.display = isSediu ? 'none' : '';
+            if (note)    note.style.display    = isSediu ? 'block' : 'none';
 
-            // If local, deselect card and select cash
-            if (isLocal) {
+            if (ramTitle && ramDesc) {
+                if (isSediu) {
+                    ramTitle.textContent = 'Numerar / Card POS';
+                    ramDesc.textContent  = 'Plătești la ridicare, la sediu';
+                } else {
+                    ramTitle.textContent = 'Ramburs (Numerar/POS)';
+                    ramDesc.textContent  = 'La livrare prin curier';
+                }
+            }
+
+            // Dacă e ridicare la sediu, deselectează cardul și selectează ramburs
+            if (isSediu) {
                 const cardRadio = document.querySelector('input[name="payment-method"][value="card"]');
-                const cashRadio = document.querySelector('input[name="payment-method"][value="cash"]');
-                if (cardRadio?.checked && cashRadio) cashRadio.checked = true;
+                const ramRadio  = document.querySelector('input[name="payment-method"][value="ramburs"]');
+                if (cardRadio?.checked && ramRadio) ramRadio.checked = true;
             }
         }
     </script>

@@ -59,6 +59,9 @@
                         <button onclick="testIntegrations()" class="btn btn-secondary" style="font-size:0.85rem;">
                             🔧 Test Oblio + SameDay
                         </button>
+                        <button onclick="syncStockFromOblio()" class="btn btn-secondary" style="font-size:0.85rem;">
+                            🔄 Sincronizează Stoc din Oblio
+                        </button>
                         <button onclick="logout()" class="btn btn-secondary" style="background: var(--error);">
                             🚪 Deconectare
                         </button>
@@ -1155,6 +1158,49 @@ ${order.notes ? '📝 NOTIȚE:\n' + order.notes : ''}
                 alert('Eroare la test: ' + e.message);
             }
             btn.textContent = '🔧 Test Oblio + SameDay';
+            btn.disabled = false;
+        }
+
+        async function syncStockFromOblio() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '⏳ Se sincronizează...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/oblio?action=sync-stock', { method: 'GET' });
+                const data = await res.json();
+
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || JSON.stringify(data.details || 'Eroare necunoscuta'));
+                }
+
+                let msg = `✅ Sincronizare completă!\n\n`;
+                msg += `Produse actualizate: ${data.updated_count}\n`;
+                msg += `Total produse în Oblio: ${data.total_oblio_products}\n`;
+
+                if (data.updated.length > 0) {
+                    msg += `\n--- Stocuri actualizate ---\n`;
+                    data.updated.forEach(u => {
+                        msg += `${u.name} (${u.sku}): ${u.oldStock} → ${u.newStock}\n`;
+                    });
+                }
+
+                if (data.not_found_in_supabase.length > 0) {
+                    msg += `\n⚠️ ${data.not_found_in_supabase.length} produse din Oblio nu au fost găsite în Supabase (verifică SKU-urile).`;
+                }
+
+                alert(msg);
+
+                // Refresh products list
+                await loadAllProducts();
+
+            } catch (err) {
+                console.error('Sync stock error:', err);
+                alert('❌ Eroare la sincronizare:\n' + err.message);
+            }
+
+            btn.textContent = originalText;
             btn.disabled = false;
         }
     </script>
