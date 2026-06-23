@@ -185,13 +185,21 @@
         let currentCategoryId = null;
         let currentCategorySlug = null;
 
-        // Mapping-uri pentru categorii (slug → nume)
+        // Mapping-uri pentru categorii (slug URL → slug Supabase → nume)
+        const SLUG_MAP = {
+            'filamente':  'filamente-3d',
+            'componente': 'componente-electronice',
+            'print3d':    'print-3d',
+            'laser':      'servicii-laser',
+            'accesorii':  'accesorii',
+        };
+
         const categoryNames = {
             'filamente': 'Filamente 3D',
             'componente': 'Componente Electronice',
             'print3d': 'Print 3D Custom',
             'laser': 'Gravare Laser',
-            'accesorii': 'Accesorii'
+            'accesorii': 'Accesorii Imprimante 3D'
         };
 
         const categoryDescriptions = {
@@ -272,7 +280,8 @@
                     filtersContainer.appendChild(btn);
                     
                     // Dacă URL-ul are categoria asta, setează-o ca activă
-                    if (currentCategorySlug && (category.slug === currentCategorySlug || category.name.toLowerCase().includes(currentCategorySlug))) {
+                    const mappedSlug = SLUG_MAP[currentCategorySlug] || currentCategorySlug;
+                    if (currentCategorySlug && (category.slug === mappedSlug || category.slug === currentCategorySlug || category.name.toLowerCase().includes(currentCategorySlug))) {
                         currentCategoryId = category.id;
                         btn.classList.add('active');
                         allButton.classList.remove('active');

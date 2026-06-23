@@ -215,6 +215,12 @@
                 
                 allProducts = await supabaseService.getProducts({ categoryId: category.id });
                 allProducts = allProducts.filter(p => p.is_active);
+                // Stoc epuizat la final din start
+                allProducts.sort((a,b) => {
+                    const aOut = (parseFloat(a.stock)||0) <= 0 ? 1 : 0;
+                    const bOut = (parseFloat(b.stock)||0) <= 0 ? 1 : 0;
+                    return aOut - bOut;
+                });
                 filteredProducts = [...allProducts];
                 
                 loadingState.style.display = 'none';
@@ -336,20 +342,45 @@
         function updateFileName(input) {
             document.getElementById('file-name').textContent = input.files[0] ? input.files[0].name : 'Click pentru a atașa fișier 3D';
         }
-        function trimiteOferta() {
-            const name = document.getElementById('oferta-name').value;
-            const email = document.getElementById('oferta-email').value;
+        async function trimiteOferta() {
+            const name  = document.getElementById('oferta-name').value.trim();
+            const email = document.getElementById('oferta-email').value.trim();
             if (!name || !email) { alert('Completează numele și emailul!'); return; }
-            // Send email via mailto as fallback
-            const msg = `Cerere ofertă Print 3D\nNume: ${name}\nEmail: ${email}\nTelefon: ${document.getElementById('oferta-phone').value}\nMaterial: ${document.getElementById('oferta-material').value}\nDetalii: ${document.getElementById('oferta-message').value}`;
-            window.location.href = `mailto:technest.prototyping@gmail.com?subject=Cerere ofertă Print 3D - ${name}&body=${encodeURIComponent(msg)}`;
-            document.getElementById('oferta-form').style.display = 'none';
-            document.getElementById('oferta-success').style.display = 'block';
+
+            const btn = document.getElementById('btn-oferta');
+            if (btn) { btn.textContent = '⏳ Se trimite...'; btn.disabled = true; }
+
+            try {
+                const res = await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        email,
+                        phone:    document.getElementById('oferta-phone').value,
+                        material: document.getElementById('oferta-material').value,
+                        message:  document.getElementById('oferta-message').value,
+                        type:     'oferta-print3d',
+                    })
+                });
+
+                if (!res.ok) throw new Error('Eroare server');
+
+                document.getElementById('oferta-form').style.display = 'none';
+                document.getElementById('oferta-success').style.display = 'block';
+
+            } catch(err) {
+                console.error(err);
+                alert('Eroare la trimitere. Încearcă din nou sau scrie direct la technest.prototyping@gmail.com');
+                if (btn) { btn.textContent = 'Trimite Cererea'; btn.disabled = false; }
+            }
         }
         function changeQty(btn, delta) {
             const qtyDisplay = btn.parentElement.querySelector('.qty-display');
+            const card = btn.closest('.product-card');
+            const maxStock = parseInt(card?.dataset?.stock) || 999;
             let qty = parseInt(qtyDisplay.textContent) || 1;
-            qty = Math.max(1, qty + delta);
+            qty = Math.max(1, Math.min(maxStock, qty + delta));
             qtyDisplay.textContent = qty;
         }
         function toggleTheme() {

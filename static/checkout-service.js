@@ -37,13 +37,24 @@ class CheckoutService {
 
     addToCart(product, quantity = 1) {
         try {
+            const maxStock = parseInt(product.stock) || 999;
+
             // Verifică dacă produsul există deja în coș
             const existingItem = this.cart.find(item => item.id === product.id);
             
             if (existingItem) {
-                // Crește cantitatea
-                existingItem.quantity += quantity;
+                const newQty = existingItem.quantity + quantity;
+                if (newQty > maxStock) {
+                    alert(`Stoc insuficient! Maxim disponibil: ${maxStock} bucăți.`);
+                    existingItem.quantity = maxStock;
+                } else {
+                    existingItem.quantity = newQty;
+                }
             } else {
+                if (quantity > maxStock) {
+                    alert(`Stoc insuficient! Maxim disponibil: ${maxStock} bucăți.`);
+                    quantity = maxStock;
+                }
                 // Adaugă produs nou în coș
                 this.cart.push({
                     id: product.id,

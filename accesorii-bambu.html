@@ -199,6 +199,12 @@
                 
                 allProducts = await supabaseService.getProducts({ categoryId: category.id });
                 allProducts = allProducts.filter(p => p.is_active);
+                // Stoc epuizat la final din start
+                allProducts.sort((a,b) => {
+                    const aOut = (parseFloat(a.stock)||0) <= 0 ? 1 : 0;
+                    const bOut = (parseFloat(b.stock)||0) <= 0 ? 1 : 0;
+                    return aOut - bOut;
+                });
                 filteredProducts = [...allProducts];
                 
                 loadingState.style.display = 'none';
@@ -317,8 +323,10 @@
 
         function changeQty(btn, delta) {
             const qtyDisplay = btn.parentElement.querySelector('.qty-display');
+            const card = btn.closest('.product-card');
+            const maxStock = parseInt(card?.dataset?.stock) || 999;
             let qty = parseInt(qtyDisplay.textContent) || 1;
-            qty = Math.max(1, qty + delta);
+            qty = Math.max(1, Math.min(maxStock, qty + delta));
             qtyDisplay.textContent = qty;
         }
 
