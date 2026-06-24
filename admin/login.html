@@ -2,6 +2,45 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
+    <script>
+        // Anti-flash FOUC fix - rulează SINCRON înainte de orice render
+        (function(){
+            try {
+                if(localStorage.getItem('theme')==='light'){
+                    document.documentElement.setAttribute('data-theme','light');
+                }
+            }catch(e){}
+        })();
+    </script>
+    <style>
+        /* Critical light-mode CSS inline - fără flash */
+        [data-theme="light"] {
+            background: #edf6ff !important;
+        }
+        [data-theme="light"] body {
+            background: #edf6ff !important;
+            color: #0a1628 !important;
+        }
+        [data-theme="light"] .main-nav {
+            background: rgba(237,246,255,0.95) !important;
+        }
+        [data-theme="light"] .grid-item,
+        [data-theme="light"] .product-card,
+        [data-theme="light"] .category-card,
+        [data-theme="light"] .feature-card,
+        [data-theme="light"] .service-item,
+        [data-theme="light"] .accordion-header,
+        [data-theme="light"] .checkout-section,
+        [data-theme="light"] .order-summary,
+        [data-theme="light"] .filter-bar,
+        [data-theme="light"] .modal-content {
+            background: #ffffff !important;
+            color: #0a1628 !important;
+        }
+        [data-theme="light"] .hero-section {
+            background: linear-gradient(135deg, #edf6ff 0%, #d6eeff 100%) !important;
+        }
+    </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - TechLab</title>
     <link rel="stylesheet" href="../static/styles.css">
@@ -167,23 +206,6 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        /* Anti-flash: clasa pe <html> aplicată sincron înainte de render */
-        html.light-mode-pending body,
-        html.light-mode-pending {
-            background: #edf6ff !important;
-        }
-    </style>
-    <script>
-        // Anti-flash: aplică tema SINCRON înainte de orice render
-        (function(){
-            try {
-                if(localStorage.getItem('theme')==='light'){
-                    document.documentElement.classList.add('light-mode-pending');
-                }
-            }catch(e){}
-        })();
-    </script>
 </head>
 <body>
     <div class="login-container">
