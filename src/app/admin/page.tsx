@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabase } from '@/lib/supabase'
 import { Product, Order, Category } from '@/types'
 
 export default function AdminPage() {
@@ -15,10 +15,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
 
-  const sb = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const sb = getSupabase()
 
   useEffect(() => {
     sb.auth.getSession().then(({ data }) => {

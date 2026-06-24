@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabaseClient } from '@/lib/supabase'
 import { Product } from '@/types'
 import ProductCard from './ProductCard'
 
@@ -22,7 +22,7 @@ export default function ProductsPage({ categorySlug, title, subtitle, filterMate
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const { data: cat } = await supabase
+      const { data: cat } = await supabaseClient()
         .from('categories')
         .select('id')
         .eq('slug', categorySlug)
@@ -30,7 +30,7 @@ export default function ProductsPage({ categorySlug, title, subtitle, filterMate
 
       if (!cat) { setLoading(false); return }
 
-      const { data } = await supabase
+      const { data } = await supabaseClient()
         .from('products')
         .select('*, categories(name, slug)')
         .eq('category_id', cat.id)

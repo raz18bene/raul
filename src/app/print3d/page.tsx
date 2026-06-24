@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabaseClient } from '@/lib/supabase'
 import ProductsPage from '@/components/shop/ProductsPage'
 
 export default function Print3DPage() {
@@ -20,9 +20,9 @@ export default function Print3DPage() {
     let fileUrl = null
     if (file) {
       const path = `print3d-requests/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`
-      const { data } = await supabase.storage.from('products').upload(path, file)
+      const { data } = await supabaseClient().storage.from('products').upload(path, file)
       if (data) {
-        const { data: url } = supabase.storage.from('products').getPublicUrl(path)
+        const { data: url } = supabaseClient().storage.from('products').getPublicUrl(path)
         fileUrl = url.publicUrl
       }
     }

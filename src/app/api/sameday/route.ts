@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase'
+export const dynamic = "force-dynamic"
 
+import { NextResponse } from 'next/server'
 // SameDay auth helper
 async function getSamedayToken() {
   const r = await fetch('https://api.sameday.ro/api/authenticate', {

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabaseClient } from '@/lib/supabase'
 import { Product } from '@/types'
 import { useCart } from '@/hooks/useCart'
 import Link from 'next/link'
@@ -19,12 +19,12 @@ export default function ProductPage() {
 
   useEffect(() => {
     if (!params.id) return
-    supabase.from('products').select('*, categories(name,slug)').eq('id', params.id).single().then(({ data }) => {
+    supabaseClient().from('products').select('*, categories(name,slug)').eq('id', params.id).single().then(({ data }) => {
       setProduct(data)
       setMainImg(data?.images?.[0] || '')
       setLoading(false)
       if (data?.recommended_ids?.length) {
-        supabase.from('products').select('*').in('id', data.recommended_ids).eq('is_active', true).then(({ data: r }) => setRecommended(r || []))
+        supabaseClient().from('products').select('*').in('id', data.recommended_ids).eq('is_active', true).then(({ data: r }) => setRecommended(r || []))
       }
     })
   }, [params.id])

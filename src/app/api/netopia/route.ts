@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase'
+export const dynamic = "force-dynamic"
 
+import { NextResponse } from 'next/server'
 export async function POST(req: Request) {
   const orderData = await req.json()
 
