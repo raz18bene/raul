@@ -34,7 +34,7 @@ export default function ProductPage() {
   if (loading) return <div className="loading-state"><div className="spinner" /></div>
   if (!product) return <div className="empty-state"><p>Produsul nu a fost găsit.</p><Link href="/" className="btn btn-primary" style={{ marginTop: '1rem' }}>Acasă</Link></div>
 
-  const price = product.sale_price ?? product.price
+  const price = parseFloat(String(product.sale_price ?? product.price ?? 0)) || 0
   const inStock = product.stock > 0
   const lowStock = product.stock > 0 && product.stock <= 10
 
@@ -96,7 +96,7 @@ export default function ProductPage() {
           <div style={{ marginBottom: '1.25rem' }}>
             <span className="product-detail-price">{price.toFixed(2)} RON</span>
             {product.sale_price && (
-              <span style={{ color: 'var(--text-muted)', textDecoration: 'line-through', fontSize: '1.1rem', marginLeft: '0.75rem' }}>{product.price.toFixed(2)} RON</span>
+              <span style={{ color: 'var(--text-muted)', textDecoration: 'line-through', fontSize: '1.1rem', marginLeft: '0.75rem' }}>{parseFloat(String(product.price ?? 0)).toFixed(2)} RON</span>
             )}
           </div>
 
@@ -137,7 +137,7 @@ export default function ProductPage() {
                   {p.images?.[0] && <img src={p.images[0]} alt={p.name} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }} />}
                   <div style={{ padding: '0.75rem' }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{p.name}</div>
-                    <div style={{ color: 'var(--primary)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{rPrice.toFixed(2)} RON</div>
+                    <div style={{ color: 'var(--primary)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{parseFloat(String(rPrice ?? 0)).toFixed(2)} RON</div>
                   </div>
                 </Link>
               )

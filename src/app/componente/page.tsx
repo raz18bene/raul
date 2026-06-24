@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic'
-
 import ProductsPage from '@/components/shop/ProductsPage'
 
 export default function ComponentePage() {

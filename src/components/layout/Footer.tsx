@@ -16,7 +16,6 @@ export default function Footer() {
             <li><Link href="/filamente">Filamente 3D</Link></li>
             <li><Link href="/componente">Componente Electronice</Link></li>
             <li><Link href="/print3d">Print 3D Custom</Link></li>
-            <li><Link href="/accesorii">Accesorii Imprimante 3D</Link></li>
             <li><Link href="/laser">Gravare Laser</Link></li>
           </ul>
         </div>

@@ -57,7 +57,7 @@ export default function ProductsPage({ categorySlug, title, subtitle, filterMate
       (p.description || '').toLowerCase().includes(filterMat)
     )
 
-    const priceOf = (p: Product) => p.sale_price ?? p.price
+    const priceOf = (p: Product) => parseFloat(String(p.sale_price ?? p.price ?? 0)) || 0
     if (sort === 'price-asc') result.sort((a, b) => priceOf(a) - priceOf(b))
     else if (sort === 'price-desc') result.sort((a, b) => priceOf(b) - priceOf(a))
     else if (sort === 'name-asc') result.sort((a, b) => a.name.localeCompare(b.name))

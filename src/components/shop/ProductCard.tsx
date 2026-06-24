@@ -10,9 +10,9 @@ export default function ProductCard({ product }: { product: Product }) {
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
 
-  const price = product.sale_price ?? product.price
-  const inStock = product.stock > 0
-  const lowStock = product.stock > 0 && product.stock <= 10
+  const price = parseFloat(String(product.sale_price ?? product.price ?? 0)) || 0
+  const inStock = (product.stock ?? 0) > 0
+  const lowStock = (product.stock ?? 0) > 0 && (product.stock ?? 0) <= 10
   const img = product.images?.[0]
 
   function handleAdd(e: React.MouseEvent) {
@@ -59,7 +59,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="product-price-row">
           <span className="product-price">{price.toFixed(2)} RON</span>
           {product.sale_price && (
-            <span className="product-price-original">{product.price.toFixed(2)} RON</span>
+            <span className="product-price-original">{parseFloat(String(product.price ?? 0)).toFixed(2)} RON</span>
           )}
         </div>
 

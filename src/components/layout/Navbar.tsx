@@ -11,7 +11,6 @@ const links = [
   { href: '/filamente', label: 'Filamente' },
   { href: '/componente', label: 'Componente' },
   { href: '/print3d', label: 'Print 3D' },
-  { href: '/accesorii', label: 'Accesorii Imprimante 3D' },
   { href: '/contact', label: 'Contact' },
 ]
 

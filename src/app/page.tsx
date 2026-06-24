@@ -73,7 +73,6 @@ export default function HomePage() {
             { icon: SPOOL_SVG, title: 'Filamente 3D', desc: 'Peste 150 de variante' },
             { icon: CHIP_SVG, title: 'Componente', desc: 'Electronice de calitate' },
             { icon: PRINT_SVG, title: 'Print 3D Custom', desc: 'La comandă în 24-48h' },
-            { icon: GEAR_SVG, title: 'Accesorii Imprimante 3D', desc: 'Piese & consumabile' },
           ].map((item, i) => (
             <div key={i} className="grid-item" style={{ animationDelay: `${0.7 + i * 0.1}s` }}>
               <div className="item-icon">{item.icon}</div>
@@ -110,8 +109,7 @@ export default function HomePage() {
           {[
             { href: '/filamente', icon: SPOOL_SVG, t: 'Filamente 3D', d: 'Peste 150 de variante de filamente premium. Partener oficial Depozitfilament.ro.' },
             { href: '/componente', icon: CHIP_SVG, t: 'Componente Electronice', d: 'Componente de calitate compatibile cu Arduino, Raspberry Pi și altele.' },
-            { href: '/print3d', icon: PRINT_SVG, t: 'Print 3D Custom', d: 'Printare la comandă în 24-48h. Upload fișiere proprii sau alege din produse.' },
-            { href: '/accesorii', icon: GEAR_SVG, t: 'Accesorii Imprimante 3D', d: 'Piese de schimb și consumabile pentru imprimante 3D.' },
+            { href: '/print3d', icon: PRINT_SVG, t: 'Print 3D Custom', d: 'Printare la comandă în 24-48h. Trimite fișierul tău și primești ofertă personalizată.' },
           ].map(c => (
             <Link key={c.href} href={c.href} className="category-card">
               <div className="category-icon">{c.icon}</div>
