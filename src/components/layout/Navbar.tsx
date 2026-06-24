@@ -22,6 +22,7 @@ export default function Navbar() {
 
   return (
     <>
+      {/* Logo - fixed top left */}
       <div className="logo-corner">
         <Link href="/" className="logo-text">
           Tech<span className="logo-accent">Nest</span>
@@ -30,78 +31,88 @@ export default function Navbar() {
 
       <nav className="main-nav">
         <div className="nav-container">
+          {/* Desktop links */}
           <ul className="nav-links">
             {links.map(l => (
               <li key={l.href}>
-                <Link
-                  href={l.href}
-                  className={`nav-link ${pathname === l.href ? 'active' : ''}`}
-                >
+                <Link href={l.href} className={`nav-link ${pathname === l.href ? 'active' : ''}`}>
                   {l.label}
                 </Link>
               </li>
             ))}
           </ul>
 
-          <button
-            className="theme-btn"
-            onClick={toggle}
-            title="Schimbă tema"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? '🌙' : '☀️'}
-          </button>
+          {/* Desktop right side */}
+          <div className="nav-right">
+            <button className="theme-btn" onClick={toggle} title="Schimbă tema" aria-label="Toggle theme">
+              {theme === 'dark' ? '🌙' : '☀️'}
+            </button>
+            <Link href="/checkout" className="cart-btn">
+              🛒 Coș <span className="cart-count">{count}</span>
+            </Link>
+            <Link href="/admin" className="admin-btn" title="Admin Panel">
+              👤
+            </Link>
+          </div>
 
-          <Link href="/checkout" className="cart-btn">
-            🛒 Coș
-            <span className="cart-count">{count}</span>
-          </Link>
-
-          <button
-            className="hamburger"
-            onClick={() => setMenuOpen(o => !o)}
-            aria-label="Menu"
-          >
-            <span />
-            <span />
-            <span />
-          </button>
+          {/* Mobile: theme + cart + hamburger */}
+          <div className="mobile-nav-right">
+            <button className="theme-btn" onClick={toggle} aria-label="Toggle theme">
+              {theme === 'dark' ? '🌙' : '☀️'}
+            </button>
+            <Link href="/checkout" className="cart-btn">
+              🛒 <span className="cart-count">{count}</span>
+            </Link>
+            <button className="hamburger" onClick={() => setMenuOpen(o => !o)} aria-label="Menu">
+              <span />
+              <span />
+              <span />
+            </button>
+          </div>
         </div>
       </nav>
 
-      {/* Mobile menu */}
+      {/* Mobile menu overlay */}
       {menuOpen && (
         <div
           style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            background: 'var(--bg-overlay)',
-            zIndex: 998,
-            display: 'flex',
-            flexDirection: 'column',
-            paddingTop: '6rem',
-            paddingLeft: '2rem',
-            gap: '0.5rem',
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'var(--bg-overlay)', zIndex: 1000,
+            display: 'flex', flexDirection: 'column',
+            paddingTop: '5rem', paddingLeft: '2rem', paddingRight: '2rem',
+            gap: '0.25rem',
           }}
-          onClick={() => setMenuOpen(false)}
         >
+          <button
+            onClick={() => setMenuOpen(false)}
+            style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem', cursor: 'pointer' }}
+          >✕</button>
           {links.map(l => (
             <Link
               key={l.href}
               href={l.href}
+              onClick={() => setMenuOpen(false)}
               style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.2rem',
-                fontWeight: 600,
+                fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 600,
                 color: pathname === l.href ? 'var(--primary)' : 'var(--text-primary)',
-                textDecoration: 'none',
-                padding: '0.75rem 0',
+                textDecoration: 'none', padding: '0.9rem 0',
                 borderBottom: '1px solid var(--border-subtle)',
               }}
             >
               {l.label}
             </Link>
           ))}
+          <Link
+            href="/admin"
+            onClick={() => setMenuOpen(false)}
+            style={{
+              fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 600,
+              color: 'var(--text-secondary)', textDecoration: 'none', padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-subtle)',
+            }}
+          >
+            👤 Admin Panel
+          </Link>
         </div>
       )}
     </>

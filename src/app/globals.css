@@ -1114,3 +1114,55 @@ body::before {
 
 /* ── Selection ── */
 ::selection { background: rgba(0,217,255,0.2); color: var(--text-primary); }
+
+/* ── Navbar right side groups ── */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mobile-nav-right {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+}
+.admin-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+@media (max-width: 1024px) {
+  .nav-links { display: none !important; }
+  .nav-right { display: none !important; }
+  .mobile-nav-right { display: flex !important; }
+  .main-nav {
+    padding: 1rem 1.25rem 1rem 8rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-nav {
+    padding: 1rem 1rem 1rem 7rem !important;
+  }
+  .logo-corner {
+    top: 1.25rem !important;
+    left: 1rem !important;
+  }
+  .logo-text { font-size: 1.2rem !important; }
+  .cart-btn { font-size: 0.8rem !important; padding: 0.4rem 0.6rem !important; }
+}
