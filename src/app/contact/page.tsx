@@ -1,4 +1,6 @@
 'use client'
+
+export const dynamic = 'force-dynamic'
 import { useState } from 'react'
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' })

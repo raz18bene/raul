@@ -1,4 +1,6 @@
 'use client'
+
+export const dynamic = 'force-dynamic'
 import { useState } from 'react'
 import { supabaseClient } from '@/lib/supabase'
 import ProductsPage from '@/components/shop/ProductsPage'
