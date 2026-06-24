@@ -182,6 +182,23 @@
             }
         }
     </style>
+    <style>
+        /* Anti-flash: clasa pe <html> aplicată sincron înainte de render */
+        html.light-mode-pending body,
+        html.light-mode-pending {
+            background: #edf6ff !important;
+        }
+    </style>
+    <script>
+        // Anti-flash: aplică tema SINCRON înainte de orice render
+        (function(){
+            try {
+                if(localStorage.getItem('theme')==='light'){
+                    document.documentElement.classList.add('light-mode-pending');
+                }
+            }catch(e){}
+        })();
+    </script>
 </head>
 <body>
     <!-- Logo -->
@@ -527,7 +544,7 @@
             const body = document.body;
             const btn = document.getElementById('theme-toggle');
             const isLight = body.classList.toggle('light-mode');
-            btn.textContent = isLight ? '🌙' : '☀️';
+            btn.textContent = isLight ? '☀️' : '🌙';
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
         }
         // Apply saved theme
@@ -535,8 +552,11 @@
             const saved = localStorage.getItem('theme');
             if (saved === 'light') {
                 document.body.classList.add('light-mode');
+                document.documentElement.classList.remove('light-mode-pending');
                 const btn = document.getElementById('theme-toggle');
                 if (btn) btn.textContent = '☀️';
+            } else {
+                document.documentElement.classList.remove('light-mode-pending');
             }
         })();
     </script>

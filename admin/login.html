@@ -167,6 +167,23 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Anti-flash: clasa pe <html> aplicată sincron înainte de render */
+        html.light-mode-pending body,
+        html.light-mode-pending {
+            background: #edf6ff !important;
+        }
+    </style>
+    <script>
+        // Anti-flash: aplică tema SINCRON înainte de orice render
+        (function(){
+            try {
+                if(localStorage.getItem('theme')==='light'){
+                    document.documentElement.classList.add('light-mode-pending');
+                }
+            }catch(e){}
+        })();
+    </script>
 </head>
 <body>
     <div class="login-container">
