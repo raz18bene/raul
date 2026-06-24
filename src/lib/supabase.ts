@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Client-side Supabase - always call as function, never at module level
+// Client-side — call inside components/hooks, never at module level
 export function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,10 +8,12 @@ export function getSupabase() {
   )
 }
 
-// Alias for convenience in client components
-export const supabaseClient = getSupabase
+// Alias — same thing, call as function
+export function supabaseClient() {
+  return getSupabase()
+}
 
-// Server-side — only inside API route handlers, never at module level
+// Server-side — only inside API route handlers
 export function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_KEY

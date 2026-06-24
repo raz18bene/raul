@@ -1,11 +1,23 @@
 'use client'
 
 export const dynamic = 'force-dynamic'
-import { useEffect, useState } from 'react'
-import { getSupabase } from '@/lib/supabase'
-import { Product, Order, Category } from '@/types'
+
+import { useEffect, useState, useRef } from 'react'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { Product, Order } from '@/types'
+
+// Lazy-load supabase only on client
+function useSupabase() {
+  const ref = useRef<SupabaseClient | null>(null)
+  if (typeof window !== 'undefined' && !ref.current) {
+    const { getSupabase } = require('@/lib/supabase')
+    ref.current = getSupabase()
+  }
+  return ref.current
+}
 
 export default function AdminPage() {
+  const sb = useSupabase()
   const [authed, setAuthed] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -13,42 +25,40 @@ export default function AdminPage() {
   const [tab, setTab] = useState<'products' | 'orders' | 'contact'>('products')
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
 
-  const sb = getSupabase()
-
   useEffect(() => {
-    sb.auth.getSession().then(({ data }) => {
+    if (!sb) return
+    sb.auth.getSession().then(({ data }: any) => {
       if (data.session) checkAdminRole(data.session.user)
     })
-  }, [])
+  }, [sb])
 
   async function checkAdminRole(user: any) {
     const role = user?.app_metadata?.role || user?.user_metadata?.role
     if (role === 'admin') { setAuthed(true); loadData() }
-    else { await sb.auth.signOut(); setLoginErr('Nu ai permisiuni de admin.') }
+    else { await sb!.auth.signOut(); setLoginErr('Nu ai permisiuni de admin.') }
   }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoginErr('')
+    if (!sb) return
     const { data, error } = await sb.auth.signInWithPassword({ email, password })
     if (error) { setLoginErr(error.message); return }
     if (data.user) checkAdminRole(data.user)
   }
 
   async function loadData() {
+    if (!sb) return
     setLoading(true)
-    const [{ data: prods }, { data: ords }, { data: cats }] = await Promise.all([
+    const [{ data: prods }, { data: ords }] = await Promise.all([
       sb.from('products').select('*, categories(name,slug)').order('name'),
       sb.from('orders').select('*, order_items(*)').order('created_at', { ascending: false }),
-      sb.from('categories').select('*').order('name'),
     ])
     setProducts(prods || [])
     setOrders(ords || [])
-    setCategories(cats || [])
     setLoading(false)
   }
 
@@ -56,16 +66,12 @@ export default function AdminPage() {
     setSyncMsg('⏳ Se sincronizează...')
     const r = await fetch('/api/oblio?action=sync-stock')
     const d = await r.json()
-    if (d.success) {
-      setSyncMsg(`✅ ${d.updated_count} produse actualizate din ${d.total_oblio} în Oblio`)
-      loadData()
-    } else {
-      setSyncMsg('❌ ' + (d.error || 'Eroare'))
-    }
+    setSyncMsg(d.success ? `✅ ${d.updated_count} produse actualizate din ${d.total_oblio} în Oblio` : '❌ ' + (d.error || 'Eroare'))
+    if (d.success) loadData()
   }
 
   async function generateAWB(order: Order) {
-    if (!confirm(`Generezi AWB pentru comanda ${order.order_number}?`)) return
+    if (!confirm(`Generezi AWB pentru ${order.order_number}?`)) return
     const addr = order.shipping_address
     const r = await fetch('/api/sameday', {
       method: 'POST',
@@ -85,7 +91,7 @@ export default function AdminPage() {
     })
     const d = await r.json()
     if (d.success) {
-      await sb.from('orders').update({ awb_number: d.awbNumber, status: 'shipped' }).eq('id', order.id)
+      await sb!.from('orders').update({ awb_number: d.awbNumber, status: 'shipped' } as any).eq('id', order.id)
       alert(`✅ AWB: ${d.awbNumber}`)
       loadData()
     } else {
@@ -94,7 +100,7 @@ export default function AdminPage() {
   }
 
   async function updateOrderStatus(id: string, status: string) {
-    await sb.from('orders').update({ status }).eq('id', id)
+    await sb!.from('orders').update({ status }).eq('id', id)
     loadData()
   }
 
@@ -103,14 +109,8 @@ export default function AdminPage() {
       <div className="card" style={{ width: '100%', maxWidth: 400 }}>
         <h1 style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', marginBottom: '1.5rem' }}>Admin Login</h1>
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div className="form-group">
-            <label>Email</label>
-            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@technest.ro" />
-          </div>
-          <div className="form-group">
-            <label>Parolă</label>
-            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} />
-          </div>
+          <div className="form-group"><label>Email</label><input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@technest.ro" /></div>
+          <div className="form-group"><label>Parolă</label><input type="password" required value={password} onChange={e => setPassword(e.target.value)} /></div>
           {loginErr && <p style={{ color: 'var(--error)', fontSize: '0.88rem' }}>{loginErr}</p>}
           <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center' }}>Intră în Admin</button>
         </form>
@@ -119,8 +119,7 @@ export default function AdminPage() {
   )
 
   const statusColors: Record<string, string> = {
-    pending: '#ed8936', processing: '#00d9ff', shipped: '#48bb78',
-    delivered: '#48bb78', cancelled: '#f56565',
+    pending: '#ed8936', processing: '#00d9ff', shipped: '#48bb78', delivered: '#48bb78', cancelled: '#f56565',
   }
 
   return (
@@ -132,23 +131,21 @@ export default function AdminPage() {
           <button className="btn btn-secondary btn-sm" onClick={async () => {
             const [s, o] = await Promise.all([fetch('/api/sameday?action=test'), fetch('/api/oblio?action=test')])
             const [sd, od] = await Promise.all([s.json(), o.json()])
-            alert(`SameDay: ${sd.message || (sd.ok ? '✅' : '❌ ' + sd.error)}\nOblio: ${od.message || (od.ok ? '✅' : '❌ ' + od.error)}`)
+            alert(`SameDay: ${sd.ok ? '✅' : '❌ ' + sd.error}\nOblio: ${od.ok ? '✅' : '❌ ' + od.error}`)
           }}>🔧 Test Integrări</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => { sb.auth.signOut(); setAuthed(false) }} style={{ background: 'var(--error)' }}>🚪 Ieși</button>
+          <button className="btn btn-sm" onClick={() => { sb!.auth.signOut(); setAuthed(false) }} style={{ background: 'var(--error)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1rem', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 600 }}>🚪 Ieși</button>
         </div>
       </div>
 
       {syncMsg && <p style={{ marginBottom: '1rem', color: syncMsg.includes('✅') ? 'var(--success)' : 'var(--error)', fontFamily: 'var(--font-display)' }}>{syncMsg}</p>}
 
-      {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
         {(['products', 'orders', 'contact'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{
+          <button key={t} onClick={() => { setTab(t); if (t !== 'products' && t !== 'orders') {} }} style={{
             fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.9rem',
             padding: '0.5rem 1.25rem', border: 'none', borderRadius: '8px', cursor: 'pointer',
             background: tab === t ? 'var(--primary)' : 'var(--bg-input)',
-            color: tab === t ? '#000' : 'var(--text-secondary)',
-            transition: 'all 0.2s',
+            color: tab === t ? '#000' : 'var(--text-secondary)', transition: 'all 0.2s',
           }}>
             {t === 'products' ? '📦 Produse' : t === 'orders' ? '🛒 Comenzi' : '📩 Cereri'}
           </button>
@@ -158,39 +155,27 @@ export default function AdminPage() {
       {loading ? (
         <div className="loading-state"><div className="spinner" /></div>
       ) : tab === 'products' ? (
-        <div>
-          <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>{products.length} produse total</span>
-          </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table className="admin-table">
-              <thead><tr>
-                <th>Produs</th><th>Categorie</th><th>Preț</th><th>Stoc</th><th>SKU</th><th>Status</th>
-              </tr></thead>
-              <tbody>
-                {products.map(p => (
-                  <tr key={p.id}>
-                    <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{p.name}</td>
-                    <td>{(p.categories as any)?.name || '-'}</td>
-                    <td style={{ color: 'var(--primary)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{(p.sale_price ?? p.price).toFixed(2)} RON</td>
-                    <td>
-                      <span style={{
-                        padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600,
-                        background: p.stock <= 0 ? 'rgba(245,101,101,0.15)' : p.stock <= 10 ? 'rgba(237,137,54,0.15)' : 'rgba(72,187,120,0.15)',
-                        color: p.stock <= 0 ? 'var(--error)' : p.stock <= 10 ? 'var(--warning)' : 'var(--success)',
-                      }}>{p.stock}</span>
-                    </td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}>{p.sku || '-'}</td>
-                    <td><span style={{ color: p.is_active ? 'var(--success)' : 'var(--error)', fontSize: '0.82rem' }}>{p.is_active ? '✓ Activ' : '✗ Inactiv'}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div style={{ overflowX: 'auto' }}>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>{products.length} produse total</p>
+          <table className="admin-table">
+            <thead><tr><th>Produs</th><th>Categorie</th><th>Preț</th><th>Stoc</th><th>SKU</th><th>Status</th></tr></thead>
+            <tbody>
+              {products.map((p: any) => (
+                <tr key={p.id}>
+                  <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{p.name}</td>
+                  <td>{p.categories?.name || '-'}</td>
+                  <td style={{ color: 'var(--primary)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{(p.sale_price ?? p.price).toFixed(2)} RON</td>
+                  <td><span style={{ padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, background: p.stock <= 0 ? 'rgba(245,101,101,0.15)' : p.stock <= 10 ? 'rgba(237,137,54,0.15)' : 'rgba(72,187,120,0.15)', color: p.stock <= 0 ? 'var(--error)' : p.stock <= 10 ? 'var(--warning)' : 'var(--success)' }}>{p.stock}</span></td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}>{p.sku || '-'}</td>
+                  <td><span style={{ color: p.is_active ? 'var(--success)' : 'var(--error)', fontSize: '0.82rem' }}>{p.is_active ? '✓ Activ' : '✗ Inactiv'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : tab === 'orders' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {orders.map(o => (
+          {orders.map((o: any) => (
             <div key={o.id} className="card" style={{ padding: '1.25rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
@@ -202,16 +187,12 @@ export default function AdminPage() {
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{new Date(o.created_at).toLocaleString('ro-RO')}</p>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 160 }}>
-                  <select
-                    value={o.status}
-                    onChange={e => updateOrderStatus(o.id, e.target.value)}
-                    style={{ padding: '0.45rem 0.75rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer' }}
-                  >
+                  <select value={o.status} onChange={e => updateOrderStatus(o.id, e.target.value)} style={{ padding: '0.45rem 0.75rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
                     {['pending','processing','shipped','delivered','cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  {(o as any).awb_number ? (
-                    <a href={`https://sameday.ro/tracking?awb=${(o as any).awb_number}`} target="_blank" style={{ padding: '0.45rem 0.75rem', background: 'var(--bg-hover)', border: '1px solid var(--primary)', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--primary)', textDecoration: 'none', textAlign: 'center' }}>
-                      🏷️ AWB: {(o as any).awb_number}
+                  {o.awb_number ? (
+                    <a href={`https://sameday.ro/tracking?awb=${o.awb_number}`} target="_blank" style={{ padding: '0.45rem 0.75rem', background: 'var(--bg-hover)', border: '1px solid var(--primary)', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--primary)', textDecoration: 'none', textAlign: 'center' }}>
+                      🏷️ AWB: {o.awb_number}
                     </a>
                   ) : o.shipping_method === 'sameday' ? (
                     <button onClick={() => generateAWB(o)} style={{ padding: '0.45rem 0.75rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
@@ -220,10 +201,10 @@ export default function AdminPage() {
                   ) : null}
                 </div>
               </div>
-              {o.order_items && o.order_items.length > 0 && (
+              {o.order_items?.length > 0 && (
                 <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-subtle)' }}>
                   {o.order_items.map((item: any) => (
-                    <span key={item.id} style={{ display: 'inline-block', margin: '0.2rem 0.4rem 0.2rem 0', padding: '0.2rem 0.6rem', background: 'var(--bg-input)', borderRadius: '6px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    <span key={item.id} style={{ display: 'inline-block', margin: '0.2rem', padding: '0.2rem 0.6rem', background: 'var(--bg-input)', borderRadius: '6px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                       {item.product_name} ×{item.quantity}
                     </span>
                   ))}
@@ -233,7 +214,7 @@ export default function AdminPage() {
           ))}
         </div>
       ) : (
-        <ContactRequests sb={sb} />
+        <ContactRequests sb={sb!} />
       )}
     </div>
   )
@@ -256,7 +237,7 @@ function ContactRequests({ sb }: { sb: any }) {
               <td>{r.phone || '-'}</td>
               <td><span style={{ padding: '0.2rem 0.5rem', background: 'var(--bg-hover)', borderRadius: '4px', fontSize: '0.78rem' }}>{r.type}</span></td>
               <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.message || '-'}</td>
-              <td>{r.file_url ? <a href={r.file_url} target="_blank" style={{ color: 'var(--primary)' }}>📎 Descarcă</a> : '-'}</td>
+              <td>{r.file_url ? <a href={r.file_url} target="_blank" style={{ color: 'var(--primary)' }}>📎</a> : '-'}</td>
               <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{new Date(r.created_at).toLocaleDateString('ro-RO')}</td>
             </tr>
           ))}
