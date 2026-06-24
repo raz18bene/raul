@@ -2,45 +2,7 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <script>
-        // Anti-flash FOUC fix - rulează SINCRON înainte de orice render
-        (function(){
-            try {
-                if(localStorage.getItem('theme')==='light'){
-                    document.documentElement.setAttribute('data-theme','light');
-                }
-            }catch(e){}
-        })();
-    </script>
-    <style>
-        /* Critical light-mode CSS inline - fără flash */
-        [data-theme="light"] {
-            background: #edf6ff !important;
-        }
-        [data-theme="light"] body {
-            background: #edf6ff !important;
-            color: #0a1628 !important;
-        }
-        [data-theme="light"] .main-nav {
-            background: rgba(237,246,255,0.95) !important;
-        }
-        [data-theme="light"] .grid-item,
-        [data-theme="light"] .product-card,
-        [data-theme="light"] .category-card,
-        [data-theme="light"] .feature-card,
-        [data-theme="light"] .service-item,
-        [data-theme="light"] .accordion-header,
-        [data-theme="light"] .checkout-section,
-        [data-theme="light"] .order-summary,
-        [data-theme="light"] .filter-bar,
-        [data-theme="light"] .modal-content {
-            background: #ffffff !important;
-            color: #0a1628 !important;
-        }
-        [data-theme="light"] .hero-section {
-            background: linear-gradient(135deg, #edf6ff 0%, #d6eeff 100%) !important;
-        }
-    </style>
+    <script>!function(){try{localStorage.getItem('theme')==='light'&&document.documentElement.classList.add('light-mode')}catch(e){}}();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gravare Laser - Technest</title>
     <link rel="stylesheet" href="static/styles.css">
@@ -338,45 +300,5 @@
         }
     </script>
     <script src="static/cookie-banner.js"></script>
-    <script>
-        // Sync cart count to floating cart
-        (function syncFloatingCart() {
-            function updateFloating() {
-                const mainCount = document.querySelector('.cart-count');
-                const floatCount = document.querySelector('.floating-cart-count');
-                if (mainCount && floatCount) floatCount.textContent = mainCount.textContent;
-            }
-            // Watch for changes
-            const observer = new MutationObserver(updateFloating);
-            setTimeout(() => {
-                const mainCount = document.querySelector('.cart-count');
-                if (mainCount) observer.observe(mainCount, { childList: true, characterData: true, subtree: true });
-                updateFloating();
-            }, 500);
-        })();
-    </script>
-    <script>
-        // DARK/LIGHT MODE
-        function toggleTheme() {
-            const body = document.body;
-            const btn = document.getElementById('theme-toggle');
-            const isLight = body.classList.toggle('light-mode');
-            document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
-            btn.textContent = isLight ? '☀️' : '🌙';
-            localStorage.setItem('theme', isLight ? 'light' : 'dark');
-        }
-        // Apply saved theme
-        (function() {
-            const saved = localStorage.getItem('theme');
-            if (saved === 'light') {
-                document.body.classList.add('light-mode');
-                document.documentElement.setAttribute('data-theme', 'light');
-                const btn = document.getElementById('theme-toggle');
-                if (btn) btn.textContent = '☀️';
-            } else {
-                document.documentElement.removeAttribute('data-theme');
-            }
-        })();
-    </script>
 </body>
 </html>
