@@ -3867,11 +3867,7 @@ table img {
 /* ═══════════════════════════════════════════════
    LIGHT MODE
 ═══════════════════════════════════════════════ */
-html.light-mode {
-    background: #edf6ff !important;
-    color: #0a1628 !important;
-}
-html.light-mode, body.light-mode {
+body.light-mode {
     background: #edf6ff;
     /* Light mode - cyan/albastru, nu oranj */
     --bg-primary:   #edf6ff;

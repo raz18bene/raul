@@ -2,7 +2,6 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <script>!function(){try{localStorage.getItem('theme')==='light'&&document.documentElement.classList.add('light-mode')}catch(e){}}();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accesorii Imprimante 3D - Technest</title>
     <link rel="stylesheet" href="static/styles.css">
@@ -349,7 +348,6 @@
     <script>
         function toggleTheme() {
             const isLight = document.body.classList.toggle('light-mode');
-            document.documentElement.classList.toggle('light-mode', isLight);
             const btn = document.getElementById('theme-toggle');
             if (btn) btn.textContent = isLight ? '☀️' : '🌙';
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
