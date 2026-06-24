@@ -125,7 +125,7 @@ body::before {
     right: 0;
     width: 100%;
     padding: 2rem 2rem 2rem 18rem;
-    background: rgba(10, 14, 39, 0.7);
+    background: var(--nav-bg, rgba(10, 14, 39, 0.7));
     backdrop-filter: var(--blur-md);
     border-bottom: 1px solid var(--border);
     z-index: 999;
@@ -2371,7 +2371,7 @@ body::before {
     border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 1rem;
-    background: rgba(10, 14, 39, 0.5);
+    background: var(--input-bg, rgba(10, 14, 39, 0.5));
     color: var(--text-primary);
     transition: all 0.3s ease;
 }
@@ -3888,10 +3888,7 @@ body.light-mode {
     --shadow-glow:  0 0 20px rgba(0,150,210,0.2);
 }
 
-body.light-mode .main-nav {
-    background: rgba(237,246,255,0.95) !important;
-    border-bottom: 1px solid rgba(0,150,210,0.2);
-}
+
 body.light-mode .product-card {
     background: #fff;
     border: 1px solid rgba(0,150,210,0.2);
@@ -4358,10 +4355,7 @@ body.light-mode .nav-overlay {
 }
 
 /* ── Light mode nav overlay & menu full fix ── */
-body.light-mode .main-nav {
-    background: rgba(255,255,255,0.97) !important;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.1) !important;
-}
+
 body.light-mode .cart-icon {
     color: #fff !important;
 }
@@ -4482,10 +4476,7 @@ body.light-mode {
 }
 
 /* Navbar - era hardcodat rgba(10,14,39,...) */
-body.light-mode .main-nav {
-    background: rgba(255, 255, 255, 0.85) !important;
-    backdrop-filter: blur(12px);
-}
+
 
 /* Inputuri / select / textarea din formulare (checkout, contact) */
 body.light-mode .form-group input,
