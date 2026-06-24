@@ -4660,3 +4660,14 @@ body.light-mode {
         box-shadow: 0 1px 8px rgba(0,100,180,0.1);
     }
 }
+
+/* ═══════════════════════════════════════════
+   THEME TOGGLE - INSTANT, FARA DELAY
+═══════════════════════════════════════════ */
+body.theme-switching,
+body.theme-switching *,
+body.theme-switching *::before,
+body.theme-switching *::after {
+    transition: none !important;
+    animation: none !important;
+}
