@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  distDir: '.next',
   images: {
     remotePatterns: [
       {
@@ -7,10 +8,6 @@ const nextConfig = {
         hostname: '*.supabase.co',
       },
     ],
-  },
-  // Suppress build warnings for missing env vars
-  typescript: {
-    ignoreBuildErrors: false,
   },
 }
 
