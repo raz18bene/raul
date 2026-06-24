@@ -3868,6 +3868,7 @@ table img {
    LIGHT MODE
 ═══════════════════════════════════════════════ */
 body.light-mode {
+    background: #edf6ff;
     /* Light mode - cyan/albastru, nu oranj */
     --bg-primary:   #edf6ff;
     --bg-secondary: #ffffff;
@@ -3886,9 +3887,7 @@ body.light-mode {
     --accent-dark:  #003d80;
     --shadow-glow:  0 0 20px rgba(0,150,210,0.2);
 }
-body.light-mode body {
-    background: #edf6ff;
-}
+
 body.light-mode .main-nav {
     background: rgba(237,246,255,0.95) !important;
     border-bottom: 1px solid rgba(0,150,210,0.2);

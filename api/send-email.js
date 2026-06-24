@@ -1,5 +1,5 @@
-// api/send-email.js - Trimite email oferta print 3D via Resend / SMTP
-// Fallback simplu: salvam cererea in Supabase si notificam pe email
+// api/send-email.js
+// Salvează cererea în Supabase + trimite email via Resend
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -8,43 +8,60 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    if (req.method !== 'POST') return res.status(405).end();
 
-    const { name, email, phone, material, message, type } = req.body || {};
+    const { name, email, phone, material, message, type, fileUrl } = req.body || {};
+    if (!name || !email) return res.status(400).json({ error: 'Nume și email obligatorii' });
 
-    if (!name || !email) {
-        return res.status(400).json({ error: 'Nume si email sunt obligatorii' });
-    }
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    const supabase = createClient(process.env.SUPABASE_URL, supabaseKey);
 
-    try {
-        const supabase = createClient(
-            process.env.SUPABASE_URL,
-            (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY)
-        );
+    // 1. Salvează în Supabase
+    await supabase.from('contact_requests').insert({
+        name, email,
+        phone: phone || null,
+        material: material || null,
+        message: message || null,
+        type: type || 'oferta-print3d',
+        file_url: fileUrl || null,
+        status: 'new',
+        created_at: new Date().toISOString(),
+    }).then(({ error }) => {
+        if (error) console.warn('Supabase insert warn:', error.message);
+    });
 
-        // Salvam cererea in Supabase (tabelul contact_requests)
-        const { error } = await supabase
-            .from('contact_requests')
-            .insert({
-                name,
-                email,
-                phone: phone || null,
-                material: material || null,
-                message,
-                type: type || 'oferta-print3d',
-                created_at: new Date().toISOString(),
-                status: 'new',
+    // 2. Trimite email via Resend (dacă e configurat)
+    const resendKey = process.env.RESEND_API_KEY;
+    if (resendKey) {
+        try {
+            await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${resendKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    from: 'TechNest <noreply@technest.ro>',
+                    to: ['technest.prototyping@gmail.com'],
+                    reply_to: email,
+                    subject: `Cerere ofertă Print 3D — ${name}`,
+                    html: `
+                        <h2>Cerere nouă Print 3D</h2>
+                        <table>
+                            <tr><td><b>Nume:</b></td><td>${name}</td></tr>
+                            <tr><td><b>Email:</b></td><td>${email}</td></tr>
+                            <tr><td><b>Telefon:</b></td><td>${phone || '-'}</td></tr>
+                            <tr><td><b>Material:</b></td><td>${material || '-'}</td></tr>
+                            <tr><td><b>Detalii:</b></td><td>${message || '-'}</td></tr>
+                            ${fileUrl ? `<tr><td><b>Fișier:</b></td><td><a href="${fileUrl}">Descarcă fișierul 3D</a></td></tr>` : ''}
+                        </table>
+                    `,
+                }),
             });
-
-        if (error) {
-            // Daca tabelul nu exista, returnam succes oricum (nu blocam UX-ul)
-            console.warn('Supabase insert error (non-fatal):', error.message);
+        } catch (e) {
+            console.warn('Resend warn:', e.message);
         }
-
-        return res.status(200).json({ success: true });
-
-    } catch (err) {
-        console.error('Send email error:', err);
-        return res.status(500).json({ error: err.message });
     }
+
+    return res.status(200).json({ success: true });
 }

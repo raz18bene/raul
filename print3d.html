@@ -74,10 +74,10 @@
                 </select>
                 <textarea id="oferta-message" placeholder="Descriere proiect / detalii suplimentare" rows="3" style="grid-column:1/-1;padding:0.75rem;background:var(--bg-darker);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);outline:none;resize:vertical;"></textarea>
                 <div style="grid-column:1/-1;border:2px dashed var(--border);border-radius:8px;padding:1.5rem;text-align:center;cursor:pointer;transition:border-color 0.2s;" onclick="document.getElementById('oferta-file').click()" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
-                    <input type="file" id="oferta-file" accept=".stl,.obj,.step,.3mf,.gcode" style="display:none;" onchange="updateFileName(this)">
-                    <p style="color:var(--text-secondary);margin:0;">📎 <span id="file-name">Click pentru a atașa fișier 3D (.stl, .obj, .step, .3mf)</span></p>
+                    <input type="file" id="oferta-file" accept=".stl,.obj,.step,.3mf,.gcode,.pdf" style="display:none;" onchange="updateFileName(this)">
+                    <p style="color:var(--text-secondary);margin:0;">📎 <span id="file-name">Click pentru a atașa fișier 3D sau PDF (.stl, .obj, .step, .3mf, .pdf)</span></p>
                 </div>
-                <button onclick="trimiteOferta()" style="grid-column:1/-1;padding:0.85rem;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:1rem;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                <button id="btn-oferta" onclick="trimiteOferta()" style="grid-column:1/-1;padding:0.85rem;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:1rem;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
                     📨 Trimite Cererea de Ofertă
                 </button>
             </div>
@@ -351,6 +351,34 @@
             if (btn) { btn.textContent = '⏳ Se trimite...'; btn.disabled = true; }
 
             try {
+                // 1. Upload fișier în Supabase Storage (dacă există)
+                let fileUrl = null;
+                const fileInput = document.getElementById('oferta-file');
+                const file = fileInput?.files?.[0];
+
+                if (file) {
+                    if (btn) btn.textContent = '⏳ Se încarcă fișierul...';
+                    await ensureSupabaseService();
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+                    const path = `print3d-requests/${Date.now()}-${safeName}`;
+
+                    const { data: uploadData, error: uploadErr } = await supabaseService.client.storage
+                        .from('products')
+                        .upload(path, file, { cacheControl: '3600', upsert: false });
+
+                    if (uploadErr) {
+                        console.warn('File upload warn:', uploadErr.message);
+                    } else {
+                        const { data: urlData } = supabaseService.client.storage
+                            .from('products')
+                            .getPublicUrl(path);
+                        fileUrl = urlData?.publicUrl || null;
+                    }
+                }
+
+                // 2. Trimite cererea la API (salvează în Supabase + email)
+                if (btn) btn.textContent = '⏳ Se trimite cererea...';
                 const res = await fetch('/api/send-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -361,6 +389,7 @@
                         material: document.getElementById('oferta-material').value,
                         message:  document.getElementById('oferta-message').value,
                         type:     'oferta-print3d',
+                        fileUrl,
                     })
                 });
 
@@ -372,7 +401,7 @@
             } catch(err) {
                 console.error(err);
                 alert('Eroare la trimitere. Încearcă din nou sau scrie direct la technest.prototyping@gmail.com');
-                if (btn) { btn.textContent = 'Trimite Cererea'; btn.disabled = false; }
+                if (btn) { btn.textContent = '📨 Trimite Cererea de Ofertă'; btn.disabled = false; }
             }
         }
         function changeQty(btn, delta) {
