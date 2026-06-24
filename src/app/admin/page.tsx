@@ -164,7 +164,7 @@ export default function AdminPage() {
                 <tr key={p.id}>
                   <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{p.name}</td>
                   <td>{p.categories?.name || '-'}</td>
-                  <td style={{ color: 'var(--primary)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{(p.sale_price ?? p.price).toFixed(2)} RON</td>
+                  <td style={{ color: 'var(--primary)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{parseFloat(String(p.sale_price ?? p.price ?? 0)).toFixed(2)} RON</td>
                   <td><span style={{ padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, background: p.stock <= 0 ? 'rgba(245,101,101,0.15)' : p.stock <= 10 ? 'rgba(237,137,54,0.15)' : 'rgba(72,187,120,0.15)', color: p.stock <= 0 ? 'var(--error)' : p.stock <= 10 ? 'var(--warning)' : 'var(--success)' }}>{p.stock}</span></td>
                   <td style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}>{p.sku || '-'}</td>
                   <td><span style={{ color: p.is_active ? 'var(--success)' : 'var(--error)', fontSize: '0.82rem' }}>{p.is_active ? '✓ Activ' : '✗ Inactiv'}</span></td>
@@ -183,7 +183,7 @@ export default function AdminPage() {
                   <span style={{ marginLeft: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, background: (statusColors[o.status] || '#718096') + '22', color: statusColors[o.status] || '#718096' }}>{o.status}</span>
                   <p style={{ marginTop: '0.4rem', color: 'var(--text-primary)', fontWeight: 500 }}>{o.customer_name}</p>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{o.customer_email} · {o.customer_phone}</p>
-                  <p style={{ color: 'var(--primary)', fontFamily: 'var(--font-display)', fontWeight: 700, marginTop: '0.3rem' }}>{Number(o.total_amount).toFixed(2)} RON</p>
+                  <p style={{ color: 'var(--primary)', fontFamily: 'var(--font-display)', fontWeight: 700, marginTop: '0.3rem' }}>{parseFloat(String(o.total_amount ?? 0)).toFixed(2)} RON</p>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{new Date(o.created_at).toLocaleString('ro-RO')}</p>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 160 }}>
