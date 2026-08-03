@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Product, Order } from '@/types'
 
@@ -351,7 +351,7 @@ export default function AdminPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loginErr, setLoginErr] = useState('')
-  const [tab, setTab] = useState<'products' | 'orders' | 'contact'>('products')
+  const [tab, setTab] = useState<'products' | 'orders' | 'contact' | 'filtre'>('products')
   const [products, setProducts] = useState<any[]>([])
   const [orders, setOrders] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
@@ -470,14 +470,14 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
-        {(['products', 'orders', 'contact'] as const).map(t => (
+        {(['products', 'orders', 'contact', 'filtre'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.88rem',
             padding: '0.5rem 1.25rem', border: 'none', borderRadius: 8, cursor: 'pointer',
             background: tab === t ? 'var(--primary)' : 'var(--bg-input)',
             color: tab === t ? '#000' : 'var(--text-secondary)',
           }}>
-            {t === 'products' ? `📦 Produse (${products.length})` : t === 'orders' ? `🛒 Comenzi (${orders.length})` : '📩 Cereri'}
+            {t === 'products' ? `📦 Produse (${products.length})` : t === 'orders' ? `🛒 Comenzi (${orders.length})` : t === 'contact' ? '📩 Cereri' : '🏷️ Filtre'}
           </button>
         ))}
       </div>
@@ -604,9 +604,11 @@ export default function AdminPage() {
             )}
           </div>
         </div>
-      ) : (
+      ) : tab === 'contact' ? (
         <ContactRequests sb={sb!} />
-      )}
+      ) : null}
+
+      {tab === 'filtre' && sb && <FiltrePage sb={sb!} products={products} onRefresh={loadData} />}
 
       {/* Modals */}
       {editProduct !== null && (
@@ -626,6 +628,258 @@ export default function AdminPage() {
           onUpdate={() => { loadData(); setEditOrder(null) }}
         />
       )}
+    </div>
+  )
+}
+
+
+// ─── Filtre Page ──────────────────────────────────────────────────
+function FiltrePage({ sb, products, onRefresh }: { sb: any, products: any[], onRefresh: () => void }) {
+  // Extrage toate atributele existente din produse
+  const existingAttrs = useMemo(() => {
+    const map: Record<string, Set<string>> = {}
+    products.forEach(p => {
+      if (!p.attributes) return
+      Object.entries(p.attributes as Record<string, string>).forEach(([k, v]) => {
+        if (!map[k]) map[k] = new Set()
+        map[k].add(v)
+      })
+    })
+    const result: Record<string, string[]> = {}
+    Object.entries(map).forEach(([k, vs]) => { result[k] = Array.from(vs).sort() })
+    return result
+  }, [products])
+
+  // State pentru creare filtru nou
+  const [newKey, setNewKey] = useState('')
+  const [newVal, setNewVal] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  // State pentru atribuire filtru la produs
+  const [selProduct, setSelProduct] = useState('')
+  const [attrKey, setAttrKey] = useState('')
+  const [attrVal, setAttrVal] = useState('')
+  const [assigning, setAssigning] = useState(false)
+  const [assignMsg, setAssignMsg] = useState('')
+
+  // Aplica filtru nou la TOATE produsele care nu il au
+  async function createAndApplyFilter() {
+    if (!newKey.trim() || !newVal.trim()) { setMsg('⚠️ Completeaza cheia si valoarea!'); return }
+    setSaving(true)
+    setMsg('')
+    let count = 0
+    for (const p of products) {
+      const attrs = (p.attributes as Record<string, string>) || {}
+      if (!attrs[newKey]) {
+        await sb.from('products').update({
+          attributes: { ...attrs, [newKey]: newVal }
+        }).eq('id', p.id)
+        count++
+      }
+    }
+    setMsg(`✅ Filtrul "${newKey}: ${newVal}" a fost adaugat la ${count} produse care nu il aveau.`)
+    setSaving(false)
+    onRefresh()
+  }
+
+  // Atribuie un filtru specific unui singur produs
+  async function assignToProduct() {
+    if (!selProduct || !attrKey.trim() || !attrVal.trim()) { setAssignMsg('⚠️ Selecteaza produsul si completeaza filtrul!'); return }
+    setAssigning(true)
+    setAssignMsg('')
+    const p = products.find(x => x.id === selProduct)
+    if (!p) { setAssignMsg('Produs negasit'); setAssigning(false); return }
+    const attrs = (p.attributes as Record<string, string>) || {}
+    const { error } = await sb.from('products').update({
+      attributes: { ...attrs, [attrKey]: attrVal }
+    }).eq('id', p.id)
+    if (error) { setAssignMsg('❌ Eroare: ' + error.message) }
+    else { setAssignMsg(`✅ Filtrul "${attrKey}: ${attrVal}" a fost atribuit produsului "${p.name}".`) }
+    setAssigning(false)
+    onRefresh()
+  }
+
+  // Sterge un filtru de la toate produsele
+  async function deleteFilterKey(key: string) {
+    if (!confirm(`Stergi filtrul "${key}" de la TOATE produsele?`)) return
+    for (const p of products) {
+      const attrs = { ...(p.attributes as Record<string, string> || {}) }
+      if (key in attrs) {
+        delete attrs[key]
+        await sb.from('products').update({ attributes: attrs }).eq('id', p.id)
+      }
+    }
+    setMsg(`🗑️ Filtrul "${key}" a fost sters de la toate produsele.`)
+    onRefresh()
+  }
+
+  // Sterge o valoare specifica a unui filtru
+  async function deleteFilterValue(key: string, val: string) {
+    if (!confirm(`Stergi valoarea "${val}" din filtrul "${key}" de la produsele care o au?`)) return
+    let count = 0
+    for (const p of products) {
+      const attrs = { ...(p.attributes as Record<string, string> || {}) }
+      if (attrs[key] === val) {
+        delete attrs[key]
+        await sb.from('products').update({ attributes: attrs }).eq('id', p.id)
+        count++
+      }
+    }
+    setMsg(`🗑️ Valoarea "${val}" a fost stearsa de la ${count} produse.`)
+    onRefresh()
+  }
+
+  const inputSty: any = {
+    padding: '0.6rem 0.75rem', background: 'var(--bg-input)', color: 'var(--text-primary)',
+    border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.9rem', outline: 'none', flex: 1
+  }
+  const labelSty: any = { fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, fontFamily: 'var(--font-display)', textTransform: 'uppercase' as any, letterSpacing: '0.05em' }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+        Gestioneaza filtrele care apar pe pagina de produse. Filtrele sunt generate automat din atributele produselor.
+      </p>
+
+      {msg && (
+        <div style={{ padding: '0.75rem 1rem', background: msg.includes('✅') ? 'rgba(72,187,120,0.1)' : msg.includes('⚠️') ? 'rgba(237,137,54,0.1)' : 'rgba(0,217,255,0.1)', border: `1px solid ${msg.includes('✅') ? 'var(--success)' : msg.includes('⚠️') ? 'var(--warning)' : 'var(--border)'}`, borderRadius: 8, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+          {msg}
+        </div>
+      )}
+
+      {/* 1. Filtre existente */}
+      <div className="card">
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '1rem' }}>
+          🏷️ Filtre existente
+        </h2>
+        {Object.keys(existingAttrs).length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Niciun filtru creat inca. Adauga primul filtru mai jos.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {Object.entries(existingAttrs).map(([key, vals]) => (
+              <div key={key} style={{ background: 'var(--bg-input)', borderRadius: 10, padding: '0.75rem 1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
+                    {key}
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 400, marginLeft: '0.5rem' }}>({vals.length} valori)</span>
+                  </span>
+                  <button onClick={() => deleteFilterKey(key)} style={{ padding: '0.2rem 0.6rem', background: 'rgba(245,101,101,0.1)', color: 'var(--error)', border: '1px solid var(--error)', borderRadius: 6, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
+                    🗑️ Sterge filtrul
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {vals.map(val => (
+                    <span key={val} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.6rem', background: 'var(--bg-page)', border: '1px solid var(--border)', borderRadius: 20, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                      {val}
+                      <button onClick={() => deleteFilterValue(key, val)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.75rem', padding: 0, lineHeight: 1 }}>✕</button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 2. Creeaza filtru nou */}
+      <div className="card">
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>
+          ➕ Creeaza filtru nou
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+          Adauga un filtru nou la toate produsele din catalog care nu il au inca.
+        </p>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 150 }}>
+            <label style={labelSty}>Nume filtru (cheie)</label>
+            <input style={inputSty} value={newKey} onChange={e => setNewKey(e.target.value)} placeholder='ex: Culoare' list="existing-keys" />
+            <datalist id="existing-keys">
+              {Object.keys(existingAttrs).map(k => <option key={k} value={k} />)}
+            </datalist>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 150 }}>
+            <label style={labelSty}>Valoare implicita</label>
+            <input style={inputSty} value={newVal} onChange={e => setNewVal(e.target.value)} placeholder='ex: Alb' list="existing-vals" />
+            <datalist id="existing-vals">
+              {newKey && existingAttrs[newKey]?.map(v => <option key={v} value={v} />)}
+            </datalist>
+          </div>
+          <button onClick={createAndApplyFilter} disabled={saving} style={{ padding: '0.6rem 1.25rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+            {saving ? '⏳...' : '✓ Creeaza filtrul'}
+          </button>
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: '0.5rem' }}>
+          * Filtrul va fi adaugat la produsele care nu au inca aceasta cheie. Produsele existente cu alta valoare nu vor fi modificate.
+        </p>
+      </div>
+
+      {/* 3. Atribuie filtru la un produs specific */}
+      <div className="card">
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>
+          🎯 Atribuie filtru la un produs specific
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+          Selecteaza un produs si seteaza sau schimba valoarea unui filtru pentru acel produs.
+        </p>
+
+        {assignMsg && (
+          <div style={{ padding: '0.6rem 1rem', background: assignMsg.includes('✅') ? 'rgba(72,187,120,0.1)' : 'rgba(245,101,101,0.1)', border: `1px solid ${assignMsg.includes('✅') ? 'var(--success)' : 'var(--error)'}`, borderRadius: 8, fontSize: '0.88rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
+            {assignMsg}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+            <label style={labelSty}>Produs</label>
+            <select style={{ ...inputSty, flex: 'none' }} value={selProduct} onChange={e => setSelProduct(e.target.value)}>
+              <option value="">— Selecteaza produsul —</option>
+              {products.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          {selProduct && (
+            <>
+              {/* Show current attributes of selected product */}
+              {(() => {
+                const p = products.find(x => x.id === selProduct)
+                const attrs = (p?.attributes as Record<string,string>) || {}
+                if (Object.keys(attrs).length > 0) return (
+                  <div style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-input)', borderRadius: 8, fontSize: '0.82rem' }}>
+                    <span style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }}>Filtre curente:</span>
+                    {Object.entries(attrs).map(([k,v]) => (
+                      <span key={k} style={{ marginRight: '0.5rem', padding: '0.15rem 0.5rem', background: 'var(--bg-hover)', borderRadius: 12, color: 'var(--primary)', fontSize: '0.8rem' }}>{k}: {v}</span>
+                    ))}
+                  </div>
+                )
+                return null
+              })()}
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 140 }}>
+                  <label style={labelSty}>Filtru (cheie)</label>
+                  <input style={inputSty} value={attrKey} onChange={e => setAttrKey(e.target.value)} placeholder='ex: Culoare' list="akey-list" />
+                  <datalist id="akey-list">
+                    {Object.keys(existingAttrs).map(k => <option key={k} value={k} />)}
+                  </datalist>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 140 }}>
+                  <label style={labelSty}>Valoare</label>
+                  <input style={inputSty} value={attrVal} onChange={e => setAttrVal(e.target.value)} placeholder='ex: Violet' list="aval-list" />
+                  <datalist id="aval-list">
+                    {attrKey && existingAttrs[attrKey]?.map(v => <option key={v} value={v} />)}
+                  </datalist>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                  <button onClick={assignToProduct} disabled={assigning} style={{ padding: '0.6rem 1.25rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem' }}>
+                    {assigning ? '⏳...' : '✓ Atribuie'}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

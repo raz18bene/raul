@@ -52,9 +52,9 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="product-category-badge">
           {product.categories?.name || ''}
         </div>
-        <h3 className="product-name">{product.name}</h3>
+        <h3 className="product-name" style={{ minHeight: "2.6rem", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{product.name}</h3>
         {product.description && (
-          <p className="product-desc">{product.description}</p>
+          <p className="product-desc" style={{ minHeight: "2.4rem" }}>{product.description}</p>
         )}
         <div className="product-price-row" style={{ justifyContent: "center", textAlign: "center" }}>
           <span className="product-price">{price.toFixed(2)} RON</span>

@@ -31,15 +31,10 @@ const CHIP_SVG = (
 )
 const PRINT_SVG = (
   <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-    <rect x="6" y="20" width="32" height="12" rx="3" stroke="var(--primary)" strokeWidth="2"/>
-    <path d="M11 20v-7a2 2 0 012-2h18a2 2 0 012 2v7" stroke="var(--primary)" strokeWidth="2"/>
-    <rect x="13" y="24" width="18" height="8" rx="1.5" stroke="var(--primary)" strokeWidth="1.5"/>
-    <circle cx="35" cy="26" r="2" fill="var(--primary)"/>
-    <line x1="17" y1="28" x2="26" y2="28" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="17" y1="30" x2="22" y2="30" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="22" y1="13" x2="22" y2="6" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M19 9l3-3 3 3" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <line x1="14" y1="17" x2="30" y2="17" stroke="var(--primary)" strokeWidth="1" strokeDasharray="2 2" opacity="0.4"/>
+    <path d="M22 6L8 14v16l14 8 14-8V14L22 6z" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round"/>
+    <path d="M8 14l14 8 14-8" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round"/>
+    <line x1="22" y1="22" x2="22" y2="38" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="22" y1="16" x2="22" y2="20" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" opacity="0.6"/>
   </svg>
 )
 const LASER_SVG = (
