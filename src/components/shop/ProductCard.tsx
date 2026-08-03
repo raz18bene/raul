@@ -12,7 +12,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const price = parseFloat(String(product.sale_price ?? product.price ?? 0)) || 0
   const inStock = (product.stock ?? 0) > 0
-  const lowStock = (product.stock ?? 0) > 0 && (product.stock ?? 0) <= 10
+  const lowStock = (product.stock ?? 0) > 0 && (product.stock ?? 0) <= 4
   const img = product.images?.[0]
 
   function handleAdd(e: React.MouseEvent) {
@@ -56,7 +56,7 @@ export default function ProductCard({ product }: { product: Product }) {
         {product.description && (
           <p className="product-desc">{product.description}</p>
         )}
-        <div className="product-price-row">
+        <div className="product-price-row" style={{ justifyContent: "center", textAlign: "center" }}>
           <span className="product-price">{price.toFixed(2)} RON</span>
           {product.sale_price && (
             <span className="product-price-original">{parseFloat(String(product.price ?? 0)).toFixed(2)} RON</span>
@@ -64,7 +64,7 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         <span className={`stock-badge ${!inStock ? 'stock-out' : lowStock ? 'stock-low' : 'stock-ok'}`}>
-          {!inStock ? 'Stoc Epuizat' : lowStock ? `Stoc Limitat: ${product.stock} buc` : `În Stoc: ${product.stock} buc`}
+          {!inStock ? 'Stoc Epuizat' : lowStock ? 'Stoc Limitat' : `În Stoc: ${product.stock} buc`}
         </span>
 
         <div className="product-actions">

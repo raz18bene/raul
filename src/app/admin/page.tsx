@@ -17,6 +17,62 @@ function useSupabase() {
 
 const safe = (v: any) => parseFloat(String(v ?? 0)) || 0
 
+
+// ─── Image Uploader ───────────────────────────────────────────────
+function ImageUploader({ images, onChange, sb }: { images: string[], onChange: (imgs: string[]) => void, sb: any }) {
+  const [uploading, setUploading] = useState(false)
+
+  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    setUploading(true)
+    const newUrls: string[] = []
+    for (const file of files) {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { data, error } = await sb.storage.from('products').upload(path, file, { cacheControl: '3600', upsert: false })
+      if (!error && data) {
+        const { data: url } = sb.storage.from('products').getPublicUrl(path)
+        newUrls.push(url.publicUrl)
+      }
+    }
+    onChange([...images, ...newUrls])
+    setUploading(false)
+    e.target.value = ''
+  }
+
+  function removeImage(idx: number) {
+    onChange(images.filter((_, i) => i !== idx))
+  }
+
+  return (
+    <div>
+      {/* Preview grid */}
+      {images.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+          {images.map((url, idx) => (
+            <div key={idx} style={{ position: 'relative', width: 80, height: 80 }}>
+              <img src={url} alt={`img${idx}`} style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, border: '2px solid var(--border)' }} />
+              {idx === 0 && <span style={{ position: 'absolute', top: 2, left: 2, background: 'var(--primary)', color: '#000', fontSize: '0.6rem', fontWeight: 700, padding: '1px 4px', borderRadius: 3 }}>MAIN</span>}
+              <button
+                type="button"
+                onClick={() => removeImage(idx)}
+                style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: 'var(--error)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Upload button */}
+      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', background: 'var(--bg-hover)', border: '2px dashed var(--border)', borderRadius: 8, cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.88rem', transition: 'border-color 0.2s', width: '100%', justifyContent: 'center' }}>
+        <input type="file" accept="image/jpeg,image/png,image/webp" multiple style={{ display: 'none' }} onChange={handleFiles} />
+        {uploading ? '⏳ Se încarcă...' : '📷 Adaugă poze (JPG, PNG, WEBP)'}
+      </label>
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>Prima poză = poza principală · Recomandare: 800×800px</p>
+    </div>
+  )
+}
+
 // ─── Product Modal ────────────────────────────────────────────────
 function ProductModal({ product, categories, onSave, onClose, sb }: {
   product: any, categories: any[], onSave: () => void, onClose: () => void, sb: SupabaseClient
@@ -33,6 +89,7 @@ function ProductModal({ product, categories, onSave, onClose, sb }: {
     featured: product?.featured || false,
     attributes: product?.attributes ? JSON.stringify(product.attributes, null, 2) : '{}',
   })
+  const [images, setImages] = useState<string[]>(product?.images || [])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -54,6 +111,7 @@ function ProductModal({ product, categories, onSave, onClose, sb }: {
       is_active: form.is_active,
       featured: form.featured,
       attributes: attrs,
+      images: images,
     }
 
     const { error: err } = product?.id
@@ -112,6 +170,10 @@ function ProductModal({ product, categories, onSave, onClose, sb }: {
             >
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
+          </div>
+          <div className="form-group">
+            <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Poze Produs</label>
+            <ImageUploader images={images} onChange={setImages} sb={sb} />
           </div>
           <div className="form-group">
             <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Atribute (JSON) — ex: {`{"Material":"PLA","Culoare":"Alb"}`}</label>

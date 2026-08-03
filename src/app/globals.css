@@ -1169,3 +1169,33 @@ body::before {
   .logo-text { font-size: 1.2rem !important; }
   .cart-btn { font-size: 0.8rem !important; padding: 0.4rem 0.6rem !important; }
 }
+
+/* ── Product card price centering ── */
+.product-price-row {
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.product-info {
+  text-align: center;
+}
+
+.product-name {
+  text-align: left;
+}
+
+.product-desc {
+  text-align: left;
+}
+
+.product-actions {
+  justify-content: center;
+}
+
+/* ── Admin image uploader hover ── */
+label:has(input[type="file"]):hover {
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}

@@ -31,16 +31,31 @@ const CHIP_SVG = (
 )
 const PRINT_SVG = (
   <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-    <rect x="5" y="16" width="34" height="16" rx="3" stroke="var(--primary)" strokeWidth="2"/>
-    <path d="M12 16V11a2 2 0 012-2h16a2 2 0 012 2v5" stroke="var(--primary)" strokeWidth="2"/>
-    <rect x="12" y="22" width="20" height="10" rx="1.5" stroke="var(--primary)" strokeWidth="1.5"/>
-    <circle cx="35" cy="24" r="2" fill="var(--primary)"/>
-    <line x1="16" y1="26" x2="28" y2="26" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="16" y1="29" x2="23" y2="29" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="22" y1="11" x2="22" y2="4" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M19 7l3-3 3 3" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <rect x="4" y="18" width="36" height="15" rx="3" stroke="var(--primary)" strokeWidth="2"/>
+    <path d="M12 18V13a2 2 0 012-2h16a2 2 0 012 2v5" stroke="var(--primary)" strokeWidth="2"/>
+    <rect x="13" y="23" width="18" height="10" rx="1.5" stroke="var(--primary)" strokeWidth="1.5"/>
+    <circle cx="36" cy="26" r="2.5" fill="var(--primary)" opacity="0.8"/>
+    <line x1="18" y1="27" x2="27" y2="27" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="18" y1="30" x2="23" y2="30" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="22" y1="13" x2="22" y2="5" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M18 9l4-4 4 4" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 )
+const LASER_SVG = (
+  <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+    <circle cx="22" cy="12" r="5" stroke="var(--primary)" strokeWidth="2"/>
+    <circle cx="22" cy="12" r="2" fill="var(--primary)" opacity="0.4"/>
+    <line x1="22" y1="17" x2="14" y2="38" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="22" y1="17" x2="30" y2="38" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="14" y1="38" x2="30" y2="38" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round"/>
+    <line x1="22" y1="2" x2="22" y2="7" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="10" y1="5" x2="14" y2="9" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="34" y1="5" x2="30" y2="9" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="6" y1="12" x2="11" y2="12" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+    <line x1="33" y1="12" x2="38" y2="12" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+  </svg>
+)
+
 const GEAR_SVG = (
   <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
     <path d="M20 6l2.5 1.5 2-1 2 2-1 2L27 13v4l-1.5 2.5 1 2-2 2-2-1L20 24l-2.5-1.5-2 1-2-2 1-2L13 17v-4l1.5-2.5-1-2 2-2 2 1z" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round"/>
@@ -78,6 +93,7 @@ export default function HomePage() {
             { icon: SPOOL_SVG, title: 'Filamente 3D', desc: 'Peste 150 de variante' },
             { icon: CHIP_SVG, title: 'Componente', desc: 'Electronice de calitate' },
             { icon: PRINT_SVG, title: 'Print 3D Custom', desc: 'La comandă în 24-48h' },
+            { icon: LASER_SVG, title: 'Gravare Laser', desc: 'Precizie maximă' },
           ].map((item, i) => (
             <div key={i} className="grid-item" style={{ animationDelay: `${0.7 + i * 0.1}s` }}>
               <div className="item-icon">{item.icon}</div>
@@ -115,6 +131,7 @@ export default function HomePage() {
             { href: '/filamente', icon: SPOOL_SVG, t: 'Filamente 3D', d: 'Peste 150 de variante de filamente premium. Partener oficial Depozitfilament.ro.' },
             { href: '/componente', icon: CHIP_SVG, t: 'Componente Electronice', d: 'Componente de calitate compatibile cu Arduino, Raspberry Pi și altele.' },
             { href: '/print3d', icon: PRINT_SVG, t: 'Print 3D Custom', d: 'Printare la comandă în 24-48h. Trimite fișierul tău și primești ofertă personalizată.' },
+            { href: '/laser', icon: LASER_SVG, t: 'Gravare Laser', d: 'Personalizare pe lemn, plexiglas, MDF cu precizie maximă.' },
           ].map(c => (
             <Link key={c.href} href={c.href} className="category-card">
               <div className="category-icon">{c.icon}</div>

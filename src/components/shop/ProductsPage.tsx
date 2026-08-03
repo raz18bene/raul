@@ -51,7 +51,7 @@ export default function ProductsPage({ categorySlug, title, subtitle, filterMate
       (p.description || '').toLowerCase().includes(q)
     )
     if (filterAvail === 'in-stock') result = result.filter(p => p.stock > 0)
-    if (filterAvail === 'low-stock') result = result.filter(p => p.stock > 0 && p.stock <= 10)
+    if (filterAvail === 'low-stock') result = result.filter(p => p.stock > 0 && p.stock <= 4)
     if (filterMat !== 'all') result = result.filter(p =>
       p.name.toLowerCase().includes(filterMat) ||
       (p.description || '').toLowerCase().includes(filterMat)
