@@ -887,32 +887,136 @@ function FiltrePage({ sb, products, onRefresh }: { sb: any, products: any[], onR
 function ContactRequests({ sb }: { sb: any }) {
   const [requests, setRequests] = useState<any[]>([])
   const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
-    sb.from('contact_requests').select('*').order('created_at', { ascending: false }).then(({ data }: any) => setRequests(data || []))
+    setLoading(true)
+    sb.from('contact_requests')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data }: any) => {
+        setRequests(data || [])
+        setLoading(false)
+      })
   }, [])
-  const filtered = requests.filter(r => !search || r.name?.toLowerCase().includes(search.toLowerCase()) || r.email?.toLowerCase().includes(search.toLowerCase()))
+
+  const filtered = requests.filter(r => {
+    const q = search.toLowerCase()
+    const matchSearch = !q || r.name?.toLowerCase().includes(q) || r.email?.toLowerCase().includes(q) || r.message?.toLowerCase().includes(q)
+    const matchType = typeFilter === 'all' || r.type === typeFilter
+    return matchSearch && matchType
+  })
+
+  const typeColors: Record<string, string> = {
+    'contact':        '#00d9ff',
+    'oferta-print3d': '#f59e0b',
+    'cerere-retur':   '#f56565',
+  }
+  const typeLabels: Record<string, string> = {
+    'contact':        '📩 Contact',
+    'oferta-print3d': '🖨️ Print 3D',
+    'cerere-retur':   '↩️ Retur',
+  }
+
+  if (loading) return <div className="loading-state"><div className="spinner" /></div>
+
   return (
     <div>
-      <input placeholder="🔍 Caută..." value={search} onChange={e => setSearch(e.target.value)}
-        style={{ marginBottom: '1rem', padding: '0.6rem 0.75rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.9rem', outline: 'none', width: '100%', maxWidth: 360 }} />
-      <div style={{ overflowX: 'auto' }}>
-        <table className="admin-table">
-          <thead><tr><th>Nume</th><th>Email</th><th>Telefon</th><th>Tip</th><th>Mesaj</th><th>Fișier</th><th>Data</th></tr></thead>
-          <tbody>
-            {filtered.map(r => (
-              <tr key={r.id}>
-                <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{r.name}</td>
-                <td><a href={`mailto:${r.email}`} style={{ color: 'var(--primary)' }}>{r.email}</a></td>
-                <td>{r.phone || '-'}</td>
-                <td><span style={{ padding: '0.2rem 0.5rem', background: 'var(--bg-hover)', borderRadius: 4, fontSize: '0.78rem' }}>{r.type}</span></td>
-                <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{r.message || '-'}</td>
-                <td>{r.file_url ? <a href={r.file_url} target="_blank" style={{ color: 'var(--primary)' }}>📎</a> : '-'}</td>
-                <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{new Date(r.created_at).toLocaleDateString('ro-RO')}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Toolbar */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+        <input
+          placeholder="🔍 Caută după nume, email, mesaj..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ flex: 1, minWidth: 200, padding: '0.6rem 0.75rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.9rem', outline: 'none' }}
+        />
+        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
+          style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem' }}>
+          <option value="all">Toate tipurile ({requests.length})</option>
+          <option value="contact">📩 Contact</option>
+          <option value="oferta-print3d">🖨️ Ofertă Print 3D</option>
+          <option value="cerere-retur">↩️ Cerere Retur</option>
+        </select>
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center' }}>{filtered.length} cereri</span>
       </div>
+
+      {/* Cards list */}
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Nicio cerere găsită</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {filtered.map(r => {
+            const isOpen = expanded === r.id
+            const color = typeColors[r.type] || 'var(--primary)'
+            const label = typeLabels[r.type] || r.type
+
+            return (
+              <div key={r.id} className="card" style={{ padding: '1rem', cursor: 'pointer', transition: 'border-color 0.2s', borderColor: isOpen ? color : 'var(--border)' }}
+                onClick={() => setExpanded(isOpen ? null : r.id)}>
+                {/* Header row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
+                      <span style={{ padding: '0.15rem 0.6rem', borderRadius: 5, fontSize: '0.75rem', fontWeight: 700, background: color + '22', color }}>{label}</span>
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--text-primary)' }}>{r.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      <a href={`mailto:${r.email}`} onClick={e => e.stopPropagation()} style={{ color: 'var(--primary)', fontSize: '0.85rem' }}>{r.email}</a>
+                      {r.phone && <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>📞 {r.phone}</span>}
+                    </div>
+                    {/* Preview of message */}
+                    {!isOpen && r.message && (
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '0.3rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 400 }}>{r.message}</p>
+                    )}
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{new Date(r.created_at).toLocaleDateString('ro-RO')}</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{new Date(r.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}</p>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{isOpen ? '▲' : '▼'}</span>
+                  </div>
+                </div>
+
+                {/* Expanded details */}
+                {isOpen && (
+                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }} onClick={e => e.stopPropagation()}>
+                    {r.material && (
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', minWidth: 100 }}>Material:</span>
+                        <span style={{ color: 'var(--text-primary)', fontSize: '0.85rem' }}>{r.material}</span>
+                      </div>
+                    )}
+                    {r.message && (
+                      <div>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '0.3rem' }}>Mesaj / Detalii:</p>
+                        <div style={{ background: 'var(--bg-input)', borderRadius: 8, padding: '0.75rem', fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{r.message}</div>
+                      </div>
+                    )}
+                    {r.file_url && (
+                      <a href={r.file_url} target="_blank" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem', background: 'rgba(0,217,255,0.08)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--primary)', fontSize: '0.88rem', textDecoration: 'none', width: 'fit-content' }}>
+                        📎 Descarcă fișierul atașat
+                      </a>
+                    )}
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                      <a href={`mailto:${r.email}?subject=Re: ${typeLabels[r.type] || ''} - TechNest`}
+                        style={{ padding: '0.45rem 0.9rem', background: 'var(--primary)', color: '#000', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, textDecoration: 'none', fontFamily: 'var(--font-display)' }}>
+                        ✉️ Răspunde pe email
+                      </a>
+                      {r.phone && (
+                        <a href={`tel:${r.phone}`}
+                          style={{ padding: '0.45rem 0.9rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.85rem', textDecoration: 'none' }}>
+                          📞 Sună
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
