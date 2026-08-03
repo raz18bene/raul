@@ -31,14 +31,15 @@ const CHIP_SVG = (
 )
 const PRINT_SVG = (
   <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-    <rect x="4" y="18" width="36" height="15" rx="3" stroke="var(--primary)" strokeWidth="2"/>
-    <path d="M12 18V13a2 2 0 012-2h16a2 2 0 012 2v5" stroke="var(--primary)" strokeWidth="2"/>
-    <rect x="13" y="23" width="18" height="10" rx="1.5" stroke="var(--primary)" strokeWidth="1.5"/>
-    <circle cx="36" cy="26" r="2.5" fill="var(--primary)" opacity="0.8"/>
-    <line x1="18" y1="27" x2="27" y2="27" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="18" y1="30" x2="23" y2="30" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="22" y1="13" x2="22" y2="5" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M18 9l4-4 4 4" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <rect x="6" y="20" width="32" height="12" rx="3" stroke="var(--primary)" strokeWidth="2"/>
+    <path d="M11 20v-7a2 2 0 012-2h18a2 2 0 012 2v7" stroke="var(--primary)" strokeWidth="2"/>
+    <rect x="13" y="24" width="18" height="8" rx="1.5" stroke="var(--primary)" strokeWidth="1.5"/>
+    <circle cx="35" cy="26" r="2" fill="var(--primary)"/>
+    <line x1="17" y1="28" x2="26" y2="28" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="17" y1="30" x2="22" y2="30" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="22" y1="13" x2="22" y2="6" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M19 9l3-3 3 3" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <line x1="14" y1="17" x2="30" y2="17" stroke="var(--primary)" strokeWidth="1" strokeDasharray="2 2" opacity="0.4"/>
   </svg>
 )
 const LASER_SVG = (
@@ -93,7 +94,7 @@ export default function HomePage() {
             { icon: SPOOL_SVG, title: 'Filamente 3D', desc: 'Peste 150 de variante' },
             { icon: CHIP_SVG, title: 'Componente', desc: 'Electronice de calitate' },
             { icon: PRINT_SVG, title: 'Print 3D Custom', desc: 'La comandă în 24-48h' },
-            { icon: LASER_SVG, title: 'Gravare Laser', desc: 'Precizie maximă' },
+            { icon: GEAR_SVG, title: 'Accesorii Imprimante 3D', desc: 'Piese & consumabile' },
           ].map((item, i) => (
             <div key={i} className="grid-item" style={{ animationDelay: `${0.7 + i * 0.1}s` }}>
               <div className="item-icon">{item.icon}</div>

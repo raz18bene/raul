@@ -452,6 +452,7 @@ export default function AdminPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <h1 style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', fontSize: '1.5rem' }}>Admin Panel</h1>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <a href="/admin-tutorial" target="_blank" className="btn btn-secondary btn-sm">📖 Tutorial Filtre</a>
           <button className="btn btn-secondary btn-sm" onClick={syncStock}>🔄 Sync Oblio</button>
           <button className="btn btn-secondary btn-sm" onClick={async () => {
             const [s, o] = await Promise.all([fetch('/api/sameday?action=test'), fetch('/api/oblio?action=test')])
