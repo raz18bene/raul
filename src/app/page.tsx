@@ -39,16 +39,16 @@ const PRINT_SVG = (
 )
 const LASER_SVG = (
   <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-    <circle cx="22" cy="12" r="5" stroke="var(--primary)" strokeWidth="2"/>
-    <circle cx="22" cy="12" r="2" fill="var(--primary)" opacity="0.4"/>
-    <line x1="22" y1="17" x2="14" y2="38" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
-    <line x1="22" y1="17" x2="30" y2="38" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
-    <line x1="14" y1="38" x2="30" y2="38" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round"/>
-    <line x1="22" y1="2" x2="22" y2="7" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
-    <line x1="10" y1="5" x2="14" y2="9" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="34" y1="5" x2="30" y2="9" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="6" y1="12" x2="11" y2="12" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-    <line x1="33" y1="12" x2="38" y2="12" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+    <rect x="3" y="6" width="18" height="12" rx="2" stroke="var(--primary)" strokeWidth="2"/>
+    <line x1="21" y1="12" x2="41" y2="12" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="41" cy="12" r="2" fill="var(--primary)"/>
+    <line x1="41" y1="12" x2="35" y2="32" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2 2" opacity="0.6"/>
+    <line x1="41" y1="12" x2="41" y2="32" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round"/>
+    <line x1="41" y1="12" x2="47" y2="32" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2 2" opacity="0.6"/>
+    <line x1="28" y1="36" x2="54" y2="36" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="7" y1="9" x2="7" y2="11" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" opacity="0.5"/>
+    <line x1="12" y1="9" x2="12" y2="11" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" opacity="0.5"/>
+    <rect x="5" y="8" width="14" height="8" rx="1" fill="var(--primary)" opacity="0.08"/>
   </svg>
 )
 
@@ -89,7 +89,7 @@ export default function HomePage() {
             { icon: SPOOL_SVG, title: 'Filamente 3D', desc: 'Peste 150 de variante' },
             { icon: CHIP_SVG, title: 'Componente', desc: 'Electronice de calitate' },
             { icon: PRINT_SVG, title: 'Print 3D Custom', desc: 'La comandă în 24-48h' },
-            { icon: GEAR_SVG, title: 'Accesorii Imprimante 3D', desc: 'Piese & consumabile' },
+            { icon: LASER_SVG, title: 'Gravare Laser', desc: 'Precizie maximă' },
           ].map((item, i) => (
             <div key={i} className="grid-item" style={{ animationDelay: `${0.7 + i * 0.1}s` }}>
               <div className="item-icon">{item.icon}</div>
