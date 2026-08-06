@@ -37,23 +37,8 @@ const PRINT_SVG = (
     <line x1="22" y1="16" x2="22" y2="20" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" opacity="0.6"/>
   </svg>
 )
-const LASER_SVG = (
-  <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-    <rect x="3" y="6" width="18" height="12" rx="2" stroke="var(--primary)" strokeWidth="2"/>
-    <line x1="21" y1="12" x2="41" y2="12" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
-    <circle cx="41" cy="12" r="2" fill="var(--primary)"/>
-    <line x1="41" y1="12" x2="35" y2="32" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2 2" opacity="0.6"/>
-    <line x1="41" y1="12" x2="41" y2="32" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round"/>
-    <line x1="41" y1="12" x2="47" y2="32" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2 2" opacity="0.6"/>
-    <line x1="28" y1="36" x2="54" y2="36" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
-    <line x1="7" y1="9" x2="7" y2="11" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" opacity="0.5"/>
-    <line x1="12" y1="9" x2="12" y2="11" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" opacity="0.5"/>
-    <rect x="5" y="8" width="14" height="8" rx="1" fill="var(--primary)" opacity="0.08"/>
-  </svg>
-)
-
 const GEAR_SVG = (
-  <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+  <svg width="44" height="44" viewBox="0 0 40 40" fill="none">
     <path d="M20 6l2.5 1.5 2-1 2 2-1 2L27 13v4l-1.5 2.5 1 2-2 2-2-1L20 24l-2.5-1.5-2 1-2-2 1-2L13 17v-4l1.5-2.5-1-2 2-2 2 1z" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round"/>
     <circle cx="20" cy="17" r="4" stroke="var(--primary)" strokeWidth="2"/>
     <circle cx="31" cy="28" r="4" stroke="var(--primary)" strokeWidth="1.5"/>
@@ -89,7 +74,7 @@ export default function HomePage() {
             { icon: SPOOL_SVG, title: 'Filamente 3D', desc: 'Peste 150 de variante' },
             { icon: CHIP_SVG, title: 'Componente', desc: 'Electronice de calitate' },
             { icon: PRINT_SVG, title: 'Print 3D Custom', desc: 'La comandă în 24-48h' },
-            { icon: LASER_SVG, title: 'Gravare Laser', desc: 'Precizie maximă' },
+            { icon: GEAR_SVG, title: 'Piese Imprimante 3D', desc: 'Piese de schimb' },
           ].map((item, i) => (
             <div key={i} className="grid-item" style={{ animationDelay: `${0.7 + i * 0.1}s` }}>
               <div className="item-icon">{item.icon}</div>
@@ -107,7 +92,7 @@ export default function HomePage() {
           {[
             { n: '01', t: 'Livrare Rapidă', d: 'Comenzi procesate în aceeași zi. Livrare în toată țara în 24-48h.' },
             { n: '02', t: 'Stoc Permanent', d: 'Mii de produse disponibile imediat. Stoc actualizat în timp real.' },
-            { n: '03', t: 'Servicii Custom', d: 'Print 3D și gravare laser personalizate după specificațiile tale.' },
+            { n: '03', t: 'Servicii Custom', d: 'Print 3D personalizat și piese de schimb pentru imprimante 3D.' },
             { n: '04', t: 'Suport Tehnic', d: 'Echipă dedicată pentru consultanță și suport complet.' },
           ].map(f => (
             <div key={f.n} className="feature-card">
@@ -127,7 +112,7 @@ export default function HomePage() {
             { href: '/filamente', icon: SPOOL_SVG, t: 'Filamente 3D', d: 'Peste 150 de variante de filamente premium. Partener oficial Depozitfilament.ro.' },
             { href: '/componente', icon: CHIP_SVG, t: 'Componente Electronice', d: 'Componente de calitate compatibile cu Arduino, Raspberry Pi și altele.' },
             { href: '/print3d', icon: PRINT_SVG, t: 'Print 3D Custom', d: 'Printare la comandă în 24-48h. Trimite fișierul tău și primești ofertă personalizată.' },
-            { href: '/laser', icon: LASER_SVG, t: 'Gravare Laser', d: 'Personalizare pe lemn, plexiglas, MDF cu precizie maximă.' },
+            { href: '/piese-imprimante-3d', icon: GEAR_SVG, t: 'Piese Imprimante 3D', d: 'Duze, hotend-uri, curele, rulmenți și alte piese de schimb pentru imprimante 3D.' },
           ].map(c => (
             <Link key={c.href} href={c.href} className="category-card">
               <div className="category-icon">{c.icon}</div>
