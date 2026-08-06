@@ -65,7 +65,7 @@ async function main() {
   }
 
   // Sanity check: sloturile pe care le foloseste site-ul in cod
-  const expectedSlugs = ['filamente-3d', 'componente-electronice', 'piese-imprimante-3d']
+  const expectedSlugs = ['filamente-3d', 'componente-electronice', 'accesorii']
   console.log('\n--- Verificare slug-uri asteptate de site ---')
   for (const slug of expectedSlugs) {
     const found = categories.find(c => c.slug === slug)
