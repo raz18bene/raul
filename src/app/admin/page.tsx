@@ -181,22 +181,33 @@ function FieldLabel({ text, help }: { text: string, help?: string }) {
 // ─── Image Uploader ───────────────────────────────────────────────
 function ImageUploader({ images, onChange, sb }: { images: string[], onChange: (imgs: string[]) => void, sb: any }) {
   const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
     setUploading(true)
+    setError('')
     const newUrls: string[] = []
+    const failMsgs: string[] = []
     for (const file of files) {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
       const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { data, error } = await sb.storage.from('products').upload(path, file, { cacheControl: '3600', upsert: false })
-      if (!error && data) {
+      const { data, error: uploadErr } = await sb.storage.from('products').upload(path, file, { cacheControl: '3600', upsert: false })
+      if (uploadErr) {
+        console.error('Eroare upload poza:', uploadErr)
+        failMsgs.push(`${file.name}: ${uploadErr.message || 'eroare necunoscută'}`)
+        continue
+      }
+      if (data) {
         const { data: url } = sb.storage.from('products').getPublicUrl(path)
         newUrls.push(url.publicUrl)
       }
     }
-    onChange([...images, ...newUrls])
+    if (newUrls.length) onChange([...images, ...newUrls])
+    if (failMsgs.length) {
+      setError(`❌ Nu s-au putut încărca ${failMsgs.length} poze: ${failMsgs.join(' · ')}`)
+    }
     setUploading(false)
     e.target.value = ''
   }
@@ -207,6 +218,11 @@ function ImageUploader({ images, onChange, sb }: { images: string[], onChange: (
 
   return (
     <div>
+      {error && (
+        <div style={{ padding: '0.6rem 0.75rem', background: 'rgba(245,101,101,0.1)', border: '1px solid var(--error)', borderRadius: 8, fontSize: '0.8rem', color: 'var(--error)', marginBottom: '0.6rem' }}>
+          {error}
+        </div>
+      )}
       {/* Preview grid */}
       {images.length > 0 && (
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
