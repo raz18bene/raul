@@ -48,6 +48,125 @@ function Help({ text }: { text: string }) {
   )
 }
 
+// ─── Ghid Admin (buton flotant + FAQ) ─────────────────────────────
+type FaqItem = { cat: string, q: string, a: React.ReactNode }
+
+const ADMIN_FAQS: FaqItem[] = [
+  // Produse
+  { cat: '📦 Produse', q: 'Cum adaug un produs nou?', a: 'Tab „Produse" → butonul „➕ Produs Nou" din dreapta sus. Completează câmpurile (apasă „?" lângă fiecare pentru explicații), adaugă poze, apoi „💾 Salvează". Produsul apare imediat pe site.' },
+  { cat: '📦 Produse', q: 'Cum editez un produs existent?', a: 'În tabelul de produse, apasă pe iconița creion ✏️ din dreptul produsului. Se deschide același formular, cu datele deja completate.' },
+  { cat: '📦 Produse', q: 'Cum șterg un produs?', a: 'Apasă pe iconița coș 🗑️ din tabel. Atenție: ștergerea e permanentă. Dacă vrei doar să-l ascunzi temporar de pe site, mai bine editează produsul și debifează „Activ" — rămâne salvat, dar nu mai apare în magazin.' },
+  { cat: '📦 Produse', q: 'De ce nu apare un produs pe site?', a: 'Verifică pe rând: (1) e bifat „Activ" la produs? (2) are Stoc mai mare de 0? (3) e pus în categoria corectă? Oricare din astea, dacă lipsește, ascunde produsul din magazin.' },
+  { cat: '📦 Produse', q: 'Cum schimb poza principală a unui produs?', a: 'Prima poză din listă e mereu poza principală (are eticheta „MAIN"). Șterge toate pozele cu ✕ și adaugă-le din nou, punând-o pe cea dorită prima.' },
+  { cat: '📦 Produse', q: 'Ce înseamnă „Recomandat"?', a: 'E doar un marcaj — produsele bifate „Recomandat" pot fi scoase în evidență pe homepage sau în secțiuni speciale ale magazinului.' },
+  { cat: '📦 Produse', q: 'Ce înseamnă Preț Redus?', a: 'Se completează DOAR dacă produsul e la reducere. Pe site apare prețul vechi tăiat și cel redus ca preț nou. Dacă nu e ofertă, lasă câmpul gol.' },
+  // Filtre
+  { cat: '🏷️ Filtre', q: 'Ce este un filtru?', a: 'O caracteristică după care clienții pot căuta produse pe site — ex: Culoare, Material, Gramaj. Fiecare filtru poate avea mai multe valori (Culoare → Alb, Negru, Roșu).' },
+  { cat: '🏷️ Filtre', q: 'Cum adaug un filtru nou la mai multe produse deodată?', a: 'Tab „Filtre" → secțiunea „➕ Creează filtru nou". Scrii numele filtrului (ex: Culoare) și o valoare implicită (ex: Alb) — se adaugă la toate produsele care nu îl au încă. Apoi corectezi excepțiile individual.' },
+  { cat: '🏷️ Filtre', q: 'Cum schimb filtrul doar la UN produs?', a: 'Tab „Filtre" → secțiunea „🎯 Atribuie filtru la un produs specific". Alegi produsul, apoi scrii filtrul și valoarea corectă pentru el.' },
+  { cat: '🏷️ Filtre', q: 'Pot adăuga filtre direct din formularul de produs?', a: 'Da — la editarea unui produs, secțiunea „Atribute / Filtre produs" îți permite să adaugi rânduri Filtru → Valoare direct acolo, fără să mai intri în tab-ul Filtre.' },
+  { cat: '🏷️ Filtre', q: 'Cum șterg un filtru?', a: 'Tab „Filtre" → în „Filtre existente": butonul „🗑️ Șterge filtrul" elimină tot filtrul (ex: toată „Culoarea") de la toate produsele. Butonul ✕ de lângă o singură valoare (ex: „Roșu") o șterge doar pe aceea.' },
+  // Comenzi
+  { cat: '🛒 Comenzi', q: 'Cum văd detaliile unei comenzi?', a: 'Tab „Comenzi" → click oriunde pe cardul comenzii. Se deschide fereastra cu client, adresă, produse comandate și total.' },
+  { cat: '🛒 Comenzi', q: 'Cum schimb statusul unei comenzi?', a: 'În fereastra comenzii, din dropdown-ul „Status Comandă" alegi noul status (pending → processing → shipped → delivered, sau cancelled), apoi „💾 Salvează Modificările".' },
+  { cat: '🛒 Comenzi', q: 'Cum generez AWB pentru livrare?', a: 'În fereastra comenzii (dacă livrarea e prin curier, nu ridicare de la sediu), apasă „🚚 Generează AWB SameDay". AWB-ul apare instant și statusul trece automat pe „shipped".' },
+  // Cereri contact
+  { cat: '📩 Cereri contact', q: 'Ce sunt cererile de contact?', a: 'Mesajele trimise de vizitatori prin formularele de pe site: contact general, ofertă print 3D sau cerere de retur. Apar în tab-ul „Cereri", cele mai noi primele.' },
+  { cat: '📩 Cereri contact', q: 'Cum răspund unei cereri?', a: 'Click pe card ca să se extindă, apoi butonul „✉️ Răspunde pe email" îți deschide clientul de mail cu adresa deja completată.' },
+  // General
+  { cat: '⚙️ General', q: 'Nu mă pot loga în admin, ce fac?', a: 'Verifică emailul și parola. Dacă primești „Nu ai permisiuni de admin", contul tău există dar nu are rol de administrator setat în Supabase — trebuie schimbat acolo, din tabela de utilizatori.' },
+  { cat: '⚙️ General', q: 'Ce face butonul „Sync Oblio"?', a: 'Sincronizează stocurile din contul tău Oblio cu produsele din site, ca să nu vinzi ceva ce nu mai ai fizic în stoc.' },
+]
+
+function AdminGuide() {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [openQ, setOpenQ] = useState<string | null>(null)
+
+  const filtered = ADMIN_FAQS.filter(f => {
+    const q = query.trim().toLowerCase()
+    if (!q) return true
+    return f.q.toLowerCase().includes(q) || f.cat.toLowerCase().includes(q) || String(f.a).toLowerCase().includes(q)
+  })
+  const categories = Array.from(new Set(filtered.map(f => f.cat)))
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="Ghid Admin — răspunsuri la întrebări frecvente"
+        style={{
+          position: 'fixed', bottom: 24, right: 24, zIndex: 3000,
+          width: 56, height: 56, borderRadius: '50%', background: 'var(--primary)', color: '#000',
+          border: 'none', cursor: 'pointer', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 4px 18px rgba(0,0,0,0.4)',
+        }}
+      >{open ? '✕' : '❓'}</button>
+
+      {open && (
+        <div style={{
+          position: 'fixed', bottom: 92, right: 24, zIndex: 3000, width: 360, maxWidth: 'calc(100vw - 2rem)',
+          maxHeight: '70vh', display: 'flex', flexDirection: 'column',
+          background: 'var(--bg-overlay)', border: '1px solid var(--border)', borderRadius: 14,
+          boxShadow: '0 10px 40px rgba(0,0,0,0.5)', overflow: 'hidden',
+        }}>
+          <div style={{ padding: '1rem 1.1rem 0.75rem', borderBottom: '1px solid var(--border)' }}>
+            <p style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', fontWeight: 700, fontSize: '1rem', marginBottom: '0.6rem' }}>
+              ❓ Ghid Admin
+            </p>
+            <input
+              autoFocus
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Caută: cum fac să..."
+              style={{ width: '100%', padding: '0.55rem 0.7rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.85rem', outline: 'none' }}
+            />
+          </div>
+
+          <div style={{ overflowY: 'auto', padding: '0.5rem 0.75rem', flex: 1 }}>
+            {filtered.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '1rem 0.5rem' }}>
+                Nicio întrebare găsită. Încearcă alți termeni, sau vezi <a href="/admin-tutorial" target="_blank" style={{ color: 'var(--primary)' }}>tutorialul complet</a>.
+              </p>
+            ) : categories.map(cat => (
+              <div key={cat} style={{ marginBottom: '0.75rem' }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.4rem 0.4rem 0.2rem' }}>{cat}</p>
+                {filtered.filter(f => f.cat === cat).map(f => {
+                  const isOpen = openQ === f.q
+                  return (
+                    <div key={f.q} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                      <button
+                        onClick={() => setOpenQ(isOpen ? null : f.q)}
+                        style={{
+                          width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
+                          padding: '0.55rem 0.4rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          color: 'var(--text-primary)', fontSize: '0.85rem', fontWeight: 500, gap: '0.5rem',
+                        }}
+                      >
+                        <span>{f.q}</span>
+                        <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{isOpen ? '▲' : '▼'}</span>
+                      </button>
+                      {isOpen && (
+                        <p style={{ padding: '0 0.4rem 0.75rem', color: 'var(--text-secondary)', fontSize: '0.82rem', lineHeight: 1.6 }}>
+                          {f.a}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ padding: '0.6rem 1.1rem', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+            <a href="/admin-tutorial" target="_blank" style={{ color: 'var(--primary)', fontSize: '0.8rem' }}>📖 Vezi tutorialul complet, cu exemple →</a>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // ─── Label cu text + Help inline ──────────────────────────────────
 function FieldLabel({ text, help }: { text: string, help?: string }) {
   return (
@@ -292,7 +411,7 @@ function ProductModal({ product, categories, existingAttrs, onSave, onClose, sb 
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
               <input type="checkbox" checked={form.featured} onChange={e => setForm(f => ({ ...f, featured: e.target.checked }))} />
               Recomandat
-              <Help text="Produsele bifate ca „Recomandat" pot fi scoase în evidență pe homepage sau în secțiuni speciale ale magazinului." />
+              <Help text="Produsele bifate ca „Recomandat” pot fi scoase în evidență pe homepage sau în secțiuni speciale ale magazinului." />
             </label>
           </div>
           {error && <p style={{ color: 'var(--error)', fontSize: '0.85rem' }}>{error}</p>}
@@ -396,20 +515,23 @@ function OrderModal({ order, onClose, onUpdate, sb }: { order: any, onClose: () 
         {/* Status controls */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
           <div className="form-group">
-            <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Status Comandă</label>
+            <FieldLabel text="Status Comandă" help='Unde se află comanda în procesul de livrare: pending (nouă, neprocesată) → processing (se pregătește) → shipped (a plecat la client) → delivered (livrată). Alege "cancelled" dacă a fost anulată.' />
             <select value={status} onChange={e => setStatus(e.target.value)}
               style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-input)', color: statusColors[status] || 'var(--text-primary)', border: `1px solid ${statusColors[status] || 'var(--border)'}`, borderRadius: 8, fontSize: '0.9rem', width: '100%', fontWeight: 600 }}>
               {['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div className="form-group">
-            <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Status Plată</label>
+            <FieldLabel text="Status Plată" help='Dacă banii au ajuns sau nu la tine: pending (neplătită încă), paid (plătită), failed (plata a eșuat), refunded (banii au fost returnați clientului).' />
             <select value={paymentStatus} onChange={e => setPaymentStatus(e.target.value)}
               style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.9rem', width: '100%' }}>
               {['pending', 'paid', 'failed', 'refunded'].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
         </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: '-0.6rem', marginBottom: '1rem' }}>
+          Modificările de mai sus se salvează abia când apeși „💾 Salvează Modificările" la final.
+        </p>
 
         {/* AWB */}
         {(order as any).awb_number ? (
@@ -419,6 +541,7 @@ function OrderModal({ order, onClose, onUpdate, sb }: { order: any, onClose: () 
           </div>
         ) : order.shipping_method !== 'sediu' ? (
           <button onClick={generateAWB} disabled={awbLoading}
+            title="Creează automat eticheta de livrare SameDay pentru această comandă și trece statusul pe 'shipped'"
             style={{ width: '100%', padding: '0.75rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: 8, fontFamily: 'var(--font-display)', fontWeight: 700, cursor: 'pointer', marginBottom: '1rem' }}>
             {awbLoading ? '⏳ Se generează...' : '🚚 Generează AWB SameDay'}
           </button>
@@ -551,33 +674,38 @@ export default function AdminPage() {
   const statusColors: Record<string, string> = { pending: '#ed8936', processing: '#00d9ff', shipped: '#48bb78', delivered: '#48bb78', cancelled: '#f56565' }
 
   if (!authed) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-      <div className="card" style={{ width: '100%', maxWidth: 400 }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', marginBottom: '1.5rem' }}>Admin Login</h1>
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div className="form-group"><label>Email</label><input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@admin.ro" /></div>
-          <div className="form-group"><label>Parolă</label><input type="password" required value={password} onChange={e => setPassword(e.target.value)} /></div>
-          {loginErr && <p style={{ color: 'var(--error)', fontSize: '0.88rem' }}>{loginErr}</p>}
-          <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center' }}>Intră în Admin</button>
-        </form>
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div className="card" style={{ width: '100%', maxWidth: 400 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', marginBottom: '1.5rem' }}>Admin Login</h1>
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="form-group"><label>Email</label><input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@admin.ro" /></div>
+            <div className="form-group"><label>Parolă</label><input type="password" required value={password} onChange={e => setPassword(e.target.value)} /></div>
+            {loginErr && <p style={{ color: 'var(--error)', fontSize: '0.88rem' }}>{loginErr}</p>}
+            <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center' }}>Intră în Admin</button>
+          </form>
+        </div>
       </div>
-    </div>
+      <AdminGuide />
+    </>
   )
 
   return (
     <div>
+      <AdminGuide />
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <h1 style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', fontSize: '1.5rem' }}>Admin Panel</h1>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <a href="/admin-tutorial" target="_blank" className="btn btn-secondary btn-sm">📖 Tutorial Filtre</a>
-          <button className="btn btn-secondary btn-sm" onClick={syncStock}>🔄 Sync Oblio</button>
-          <button className="btn btn-secondary btn-sm" onClick={async () => {
+          <a href="/admin-tutorial" target="_blank" className="btn btn-secondary btn-sm" title="Deschide tutorialul complet, pas cu pas, cu exemple">📖 Tutorial Filtre</a>
+          <button className="btn btn-secondary btn-sm" onClick={syncStock} title="Actualizează stocurile din contul Oblio pe site, ca să nu vinzi produse epuizate">🔄 Sync Oblio</button>
+          <button className="btn btn-secondary btn-sm" title="Verifică dacă legăturile cu SameDay (curier) și Oblio (facturare) funcționează corect" onClick={async () => {
             const [s, o] = await Promise.all([fetch('/api/sameday?action=test'), fetch('/api/oblio?action=test')])
             const [sd, od] = await Promise.all([s.json(), o.json()])
             alert(`SameDay: ${sd.ok ? '✅' : '❌ ' + sd.error}\nOblio: ${od.ok ? '✅' : '❌ ' + od.error}`)
           }}>🔧 Test Integrări</button>
           <button onClick={() => { sb!.auth.signOut(); setAuthed(false) }}
+            title="Ieși din contul de admin"
             style={{ padding: '0.5rem 1rem', background: 'var(--error)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.85rem' }}>
             🚪 Ieși
           </button>
@@ -587,17 +715,25 @@ export default function AdminPage() {
       {syncMsg && <p style={{ marginBottom: '1rem', color: syncMsg.includes('✅') ? 'var(--success)' : 'var(--error)', fontFamily: 'var(--font-display)', fontSize: '0.9rem' }}>{syncMsg}</p>}
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
-        {(['products', 'orders', 'contact', 'filtre'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{
-            fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.88rem',
-            padding: '0.5rem 1.25rem', border: 'none', borderRadius: 8, cursor: 'pointer',
-            background: tab === t ? 'var(--primary)' : 'var(--bg-input)',
-            color: tab === t ? '#000' : 'var(--text-secondary)',
-          }}>
-            {t === 'products' ? `📦 Produse (${products.length})` : t === 'orders' ? `🛒 Comenzi (${orders.length})` : t === 'contact' ? '📩 Cereri' : '🏷️ Filtre'}
-          </button>
-        ))}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem', flexWrap: 'wrap' }}>
+        {(['products', 'orders', 'contact', 'filtre'] as const).map(t => {
+          const tabTitles: Record<string, string> = {
+            products: 'Adaugă, editează sau șterge produsele din magazin',
+            orders: 'Vezi și procesează comenzile clienților',
+            contact: 'Mesaje trimise de vizitatori prin formularele de pe site',
+            filtre: 'Gestionează caracteristicile (Culoare, Material etc.) după care se pot filtra produsele',
+          }
+          return (
+            <button key={t} onClick={() => setTab(t)} title={tabTitles[t]} style={{
+              fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.88rem',
+              padding: '0.5rem 1.25rem', border: 'none', borderRadius: 8, cursor: 'pointer',
+              background: tab === t ? 'var(--primary)' : 'var(--bg-input)',
+              color: tab === t ? '#000' : 'var(--text-secondary)',
+            }}>
+              {t === 'products' ? `📦 Produse (${products.length})` : t === 'orders' ? `🛒 Comenzi (${orders.length})` : t === 'contact' ? '📩 Cereri' : '🏷️ Filtre'}
+            </button>
+          )
+        })}
       </div>
 
       {loading ? (
@@ -656,8 +792,8 @@ export default function AdminPage() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        <button onClick={() => setEditProduct(p)} style={{ padding: '0.3rem 0.6rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>✏️</button>
-                        <button onClick={() => deleteProduct(p.id)} style={{ padding: '0.3rem 0.6rem', background: 'rgba(245,101,101,0.15)', color: 'var(--error)', border: '1px solid var(--error)', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem' }}>🗑️</button>
+                        <button onClick={() => setEditProduct(p)} title="Editează acest produs" style={{ padding: '0.3rem 0.6rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>✏️</button>
+                        <button onClick={() => deleteProduct(p.id)} title="Șterge definitiv acest produs (dacă vrei doar să-l ascunzi, editează-l și debifează Activ)" style={{ padding: '0.3rem 0.6rem', background: 'rgba(245,101,101,0.15)', color: 'var(--error)', border: '1px solid var(--error)', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem' }}>🗑️</button>
                       </div>
                     </td>
                   </tr>
