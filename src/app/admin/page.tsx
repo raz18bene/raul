@@ -895,7 +895,7 @@ export default function AdminPage() {
         <ContactRequests sb={sb!} />
       ) : null}
 
-      {tab === 'filtre' && sb && <FiltrePage sb={sb!} products={products} existingAttrs={existingAttrs} onRefresh={loadData} />}
+      {tab === 'filtre' && sb && <FiltrePage sb={sb!} products={products} categories={categories} existingAttrs={existingAttrs} onRefresh={loadData} />}
 
       {/* Modals */}
       {editProduct !== null && (
@@ -922,10 +922,11 @@ export default function AdminPage() {
 
 
 // ─── Filtre Page ──────────────────────────────────────────────────
-function FiltrePage({ sb, products, existingAttrs, onRefresh }: { sb: any, products: any[], existingAttrs: Record<string, string[]>, onRefresh: () => void }) {
+function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb: any, products: any[], categories: any[], existingAttrs: Record<string, string[]>, onRefresh: () => void }) {
   // Stare pentru creare filtru nou
   const [newKey, setNewKey] = useState('')
   const [newVal, setNewVal] = useState('')
+  const [newFilterCategory, setNewFilterCategory] = useState('') // '' = toate categoriile
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
 
@@ -936,13 +937,16 @@ function FiltrePage({ sb, products, existingAttrs, onRefresh }: { sb: any, produ
   const [assigning, setAssigning] = useState(false)
   const [assignMsg, setAssignMsg] = useState('')
 
-  // Aplica filtru nou la TOATE produsele care nu il au
+  // Aplica filtru nou la produsele care nu il au (din categoria selectata, sau din tot magazinul daca nu e aleasa niciuna)
   async function createAndApplyFilter() {
     if (!newKey.trim() || !newVal.trim()) { setMsg('⚠️ Completeaza cheia si valoarea!'); return }
     setSaving(true)
     setMsg('')
+    const targetProducts = newFilterCategory
+      ? products.filter(p => p.category_id === newFilterCategory)
+      : products
     let count = 0
-    for (const p of products) {
+    for (const p of targetProducts) {
       const attrs = (p.attributes as Record<string, string>) || {}
       if (!attrs[newKey]) {
         await sb.from('products').update({
@@ -951,7 +955,8 @@ function FiltrePage({ sb, products, existingAttrs, onRefresh }: { sb: any, produ
         count++
       }
     }
-    setMsg(`✅ Filtrul "${newKey}: ${newVal}" a fost adaugat la ${count} produse care nu il aveau.`)
+    const catName = newFilterCategory ? categories.find(c => c.id === newFilterCategory)?.name : null
+    setMsg(`✅ Filtrul "${newKey}: ${newVal}" a fost adaugat la ${count} produse${catName ? ` din categoria "${catName}"` : ''} care nu il aveau.`)
     setSaving(false)
     onRefresh()
   }
@@ -1068,9 +1073,19 @@ function FiltrePage({ sb, products, existingAttrs, onRefresh }: { sb: any, produ
           <Help text="Folosește asta când vrei să adaugi un filtru complet nou (ex: un filtru 'Diametru' care încă nu există la niciun produs) la mai multe produse deodată." />
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-          Adauga un filtru nou la toate produsele din catalog care nu il au inca.
+          Adaugă un filtru nou la produsele care nu îl au încă — alege mai jos dacă îl aplici la o singură categorie sau la tot magazinul.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 170 }}>
+            <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
+              Se aplică la
+              <Help text='Alege o categorie ca filtrul să se adauge DOAR la produsele din ea (ex: "Culoare" doar la Filamente). Lasă pe "Toate categoriile" doar dacă filtrul chiar are sens peste tot în magazin.' />
+            </label>
+            <select style={{ ...inputSty, flex: 'none' }} value={newFilterCategory} onChange={e => setNewFilterCategory(e.target.value)}>
+              <option value="">Toate categoriile</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 150 }}>
             <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
               Nume filtru (cheie)
@@ -1084,7 +1099,7 @@ function FiltrePage({ sb, products, existingAttrs, onRefresh }: { sb: any, produ
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 150 }}>
             <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
               Valoare implicita
-              <Help text='Valoarea pe care o vor primi TOATE produsele care nu au încă acest filtru. Ex: dacă majoritatea produselor sunt "Alb", pune "Alb" aici — apoi corectezi individual excepțiile din secțiunea 3, mai jos.' />
+              <Help text='Valoarea pe care o vor primi produsele vizate (categoria aleasă mai sus, sau toate) care nu au încă acest filtru. Ex: dacă majoritatea sunt "Alb", pune "Alb" aici — apoi corectezi individual excepțiile din secțiunea 3, mai jos.' />
             </label>
             <input style={inputSty} value={newVal} onChange={e => setNewVal(e.target.value)} placeholder='ex: Alb' list="existing-vals" />
             <datalist id="existing-vals">
@@ -1096,7 +1111,7 @@ function FiltrePage({ sb, products, existingAttrs, onRefresh }: { sb: any, produ
           </button>
         </div>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: '0.5rem' }}>
-          * Filtrul va fi adaugat la produsele care nu au inca aceasta cheie. Produsele existente cu alta valoare nu vor fi modificate.
+          * Filtrul se aplică doar în categoria aleasă mai sus (sau în tot magazinul, dacă lași "Toate categoriile"), și doar la produsele care nu au încă această cheie. Produsele care au deja o valoare pentru acest filtru nu sunt modificate.
         </p>
       </div>
 
