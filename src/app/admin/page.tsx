@@ -282,6 +282,14 @@ function ProductModal({ product, categories, existingAttrs, onSave, onClose, sb 
     setAttrRows(rows => rows.filter((_, i) => i !== idx))
   }
 
+  function slugify(s: string) {
+    return s
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // scoate diacritice
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -306,7 +314,13 @@ function ProductModal({ product, categories, existingAttrs, onSave, onClose, sb 
 
     const { error: err } = product?.id
       ? await sb.from('products').update(data).eq('id', product.id)
-      : await sb.from('products').insert({ ...data, images: [] })
+      : await sb.from('products').insert({
+          ...data,
+          images: [],
+          // "slug" e obligatoriu si unic in baza de date — il generam din nume + un cod scurt aleator,
+          // ca sa nu se blocheze salvarea daca exista deja alt produs cu nume identic/similar
+          slug: `${slugify(form.name)}-${Math.random().toString(36).slice(2, 7)}`,
+        })
 
     if (err) { setError(err.message); setSaving(false); return }
     onSave()
