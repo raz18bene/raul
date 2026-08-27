@@ -17,6 +17,47 @@ function useSupabase() {
 
 const safe = (v: any) => parseFloat(String(v ?? 0)) || 0
 
+// ─── Help tooltip (iconita "?" cu explicatie) ────────────────────
+function Help({ text }: { text: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', verticalAlign: 'middle', marginLeft: 6 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        aria-label="Ajutor"
+        style={{
+          width: 16, height: 16, borderRadius: '50%', border: '1px solid var(--border)',
+          background: 'var(--bg-input)', color: 'var(--text-muted)', fontSize: '0.65rem', fontWeight: 700,
+          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          lineHeight: 1, padding: 0, flexShrink: 0,
+        }}
+      >?</button>
+      {open && (
+        <span style={{
+          position: 'absolute', zIndex: 20, top: '140%', left: 0, width: 230,
+          background: 'var(--bg-overlay)', border: '1px solid var(--primary)', borderRadius: 8,
+          padding: '0.6rem 0.75rem', fontSize: '0.78rem', fontWeight: 400, color: 'var(--text-secondary)',
+          lineHeight: 1.5, boxShadow: '0 6px 20px rgba(0,0,0,0.45)',
+        }}>
+          {text}
+        </span>
+      )}
+    </span>
+  )
+}
+
+// ─── Label cu text + Help inline ──────────────────────────────────
+function FieldLabel({ text, help }: { text: string, help?: string }) {
+  return (
+    <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+      {text}
+      {help && <Help text={help} />}
+    </label>
+  )
+}
+
 
 // ─── Image Uploader ───────────────────────────────────────────────
 function ImageUploader({ images, onChange, sb }: { images: string[], onChange: (imgs: string[]) => void, sb: any }) {
@@ -68,14 +109,14 @@ function ImageUploader({ images, onChange, sb }: { images: string[], onChange: (
         <input type="file" accept="image/jpeg,image/png,image/webp" multiple style={{ display: 'none' }} onChange={handleFiles} />
         {uploading ? '⏳ Se încarcă...' : '📷 Adaugă poze (JPG, PNG, WEBP)'}
       </label>
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>Prima poză = poza principală · Recomandare: 800×800px</p>
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>📌 Prima poză din listă = poza principală (cea care apare în magazin). Trage pozele în ordinea dorită dacă vrei alta principală — sau șterge-le (✕) și adaugă-le din nou în ordinea corectă. Recomandare: poze pătrate, 800×800px, fundal curat.</p>
     </div>
   )
 }
 
 // ─── Product Modal ────────────────────────────────────────────────
-function ProductModal({ product, categories, onSave, onClose, sb }: {
-  product: any, categories: any[], onSave: () => void, onClose: () => void, sb: SupabaseClient
+function ProductModal({ product, categories, existingAttrs, onSave, onClose, sb }: {
+  product: any, categories: any[], existingAttrs: Record<string, string[]>, onSave: () => void, onClose: () => void, sb: SupabaseClient
 }) {
   const [form, setForm] = useState({
     name: product?.name || '',
@@ -87,18 +128,32 @@ function ProductModal({ product, categories, onSave, onClose, sb }: {
     category_id: product?.category_id || categories[0]?.id || '',
     is_active: product?.is_active ?? true,
     featured: product?.featured || false,
-    attributes: product?.attributes ? JSON.stringify(product.attributes, null, 2) : '{}',
   })
   const [images, setImages] = useState<string[]>(product?.images || [])
+  const [attrRows, setAttrRows] = useState<{ key: string, value: string }[]>(() => {
+    const entries = Object.entries(product?.attributes || {}) as [string, string][]
+    return entries.length ? entries.map(([key, value]) => ({ key, value: String(value) })) : [{ key: '', value: '' }]
+  })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  function updateAttrRow(idx: number, field: 'key' | 'value', val: string) {
+    setAttrRows(rows => rows.map((r, i) => i === idx ? { ...r, [field]: val } : r))
+  }
+  function addAttrRow() {
+    setAttrRows(rows => [...rows, { key: '', value: '' }])
+  }
+  function removeAttrRow(idx: number) {
+    setAttrRows(rows => rows.filter((_, i) => i !== idx))
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     setError('')
-    let attrs = {}
-    try { attrs = JSON.parse(form.attributes) } catch { setError('Atribute JSON invalid'); setSaving(false); return }
+
+    const attrs: Record<string, string> = {}
+    attrRows.forEach(r => { if (r.key.trim() && r.value.trim()) attrs[r.key.trim()] = r.value.trim() })
 
     const data = {
       name: form.name,
@@ -122,9 +177,9 @@ function ProductModal({ product, categories, onSave, onClose, sb }: {
     onSave()
   }
 
-  const inp = (label: string, key: string, type = 'text', props: any = {}) => (
+  const inp = (label: string, key: string, type = 'text', props: any = {}, help?: string) => (
     <div className="form-group">
-      <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{label}</label>
+      <FieldLabel text={label} help={help} />
       <input
         type={type}
         value={(form as any)[key]}
@@ -135,19 +190,24 @@ function ProductModal({ product, categories, onSave, onClose, sb }: {
     </div>
   )
 
+  const smallInputSty: any = { padding: '0.55rem 0.65rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.85rem', width: '100%', outline: 'none' }
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
       <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border)', borderRadius: 16, padding: '2rem', width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
           <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', fontSize: '1.2rem' }}>
             {product?.id ? '✏️ Editează Produs' : '➕ Produs Nou'}
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '1.5rem', cursor: 'pointer' }}>✕</button>
         </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '1.25rem' }}>
+          Câmpurile cu * sunt obligatorii. Apasă pe fiecare „?" pentru explicații.
+        </p>
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {inp('Nume Produs *', 'name', 'text', { required: true })}
+          {inp('Nume Produs *', 'name', 'text', { required: true }, 'Numele produsului, exact cum vrei să apară pe site și în comenzi/facturi. Ex: „PLA Alb 1kg".')}
           <div className="form-group">
-            <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Descriere</label>
+            <FieldLabel text="Descriere" help="Textul care apare pe pagina produsului, sub imagini. Poți descrie materialul, folosirea recomandată, dimensiuni etc. Nu e obligatoriu, dar ajută clientul să decidă." />
             <textarea
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
@@ -156,13 +216,13 @@ function ProductModal({ product, categories, onSave, onClose, sb }: {
             />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-            {inp('Preț (RON) *', 'price', 'number', { required: true, step: '0.01', min: '0' })}
-            {inp('Preț Redus (RON)', 'sale_price', 'number', { step: '0.01', min: '0' })}
-            {inp('Stoc *', 'stock', 'number', { required: true, min: '0' })}
-            {inp('SKU', 'sku')}
+            {inp('Preț (RON) *', 'price', 'number', { required: true, step: '0.01', min: '0' }, 'Prețul normal de vânzare, în lei, fără TVA scris separat (prețul afișat este prețul final).')}
+            {inp('Preț Redus (RON)', 'sale_price', 'number', { step: '0.01', min: '0' }, 'Completează DOAR dacă produsul e la reducere. Pe site va apărea prețul vechi tăiat și acesta ca preț nou. Lasă gol dacă nu e ofertă.')}
+            {inp('Stoc *', 'stock', 'number', { required: true, min: '0' }, 'Câte bucăți ai disponibile în acest moment. Când ajunge la 0, produsul apare „Stoc epuizat" pe site.')}
+            {inp('SKU', 'sku', 'text', {}, 'Cod intern de produs (opțional), util pentru gestiune/facturare. Dacă nu ai un sistem de coduri, poți lăsa gol.')}
           </div>
           <div className="form-group">
-            <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Categorie</label>
+            <FieldLabel text="Categorie" help="Secțiunea din magazin în care va apărea produsul (ex: Filamente 3D, Componente Electronice). Alege categoria potrivită, altfel produsul nu va fi găsit pe pagina corectă." />
             <select
               value={form.category_id}
               onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}
@@ -172,31 +232,72 @@ function ProductModal({ product, categories, onSave, onClose, sb }: {
             </select>
           </div>
           <div className="form-group">
-            <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Poze Produs</label>
+            <FieldLabel text="Poze Produs" help="Adaugă una sau mai multe poze cu produsul. Prima poză adăugată devine automat poza principală (cea din listă/cataloage)." />
             <ImageUploader images={images} onChange={setImages} sb={sb} />
           </div>
+
+          {/* Atribute / Filtre — editor tip randuri, nu JSON */}
           <div className="form-group">
-            <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Atribute (JSON) — ex: {`{"Material":"PLA","Culoare":"Alb"}`}</label>
-            <textarea
-              value={form.attributes}
-              onChange={e => setForm(f => ({ ...f, attributes: e.target.value }))}
-              rows={3}
-              style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.82rem', fontFamily: 'monospace', width: '100%', resize: 'vertical', outline: 'none' }}
-            />
+            <FieldLabel text="Atribute / Filtre produs" help='Aici spui ce caracteristici are ACEST produs — de ex. Culoare = Alb, Material = PLA. Acestea devin automat filtrele pe care le văd și le pot bifa clienții pe pagina de produse (vezi și tab-ul "🏷️ Filtre" din admin).' />
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '-0.15rem 0 0.5rem' }}>
+              Fiecare rând = un filtru (stânga) și valoarea lui pentru acest produs (dreapta). Ex: <em>Culoare</em> → <em>Alb</em>.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {attrRows.map((row, i) => (
+                <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    style={smallInputSty}
+                    value={row.key}
+                    onChange={e => updateAttrRow(i, 'key', e.target.value)}
+                    placeholder="ex: Culoare"
+                    list="pm-attr-keys"
+                  />
+                  <input
+                    style={smallInputSty}
+                    value={row.value}
+                    onChange={e => updateAttrRow(i, 'value', e.target.value)}
+                    placeholder="ex: Alb"
+                    list={`pm-attr-vals-${i}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeAttrRow(i)}
+                    title="Șterge acest rând"
+                    style={{ width: 30, height: 30, flexShrink: 0, borderRadius: 8, background: 'rgba(245,101,101,0.1)', color: 'var(--error)', border: '1px solid var(--error)', cursor: 'pointer', fontSize: '0.8rem' }}
+                  >✕</button>
+                  {row.key && existingAttrs[row.key] && (
+                    <datalist id={`pm-attr-vals-${i}`}>
+                      {existingAttrs[row.key].map(v => <option key={v} value={v} />)}
+                    </datalist>
+                  )}
+                </div>
+              ))}
+              <datalist id="pm-attr-keys">
+                {Object.keys(existingAttrs).map(k => <option key={k} value={k} />)}
+              </datalist>
+              <button
+                type="button"
+                onClick={addAttrRow}
+                style={{ padding: '0.5rem 0.9rem', background: 'var(--bg-hover)', border: '1px dashed var(--border)', borderRadius: 8, color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem', width: 'fit-content' }}
+              >+ Adaugă atribut</button>
+            </div>
           </div>
+
           <div style={{ display: 'flex', gap: '1.5rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
               <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
               Activ
+              <Help text="Dacă e bifat, produsul apare pe site și poate fi cumpărat. Dacă îl debifezi, produsul rămâne salvat în admin dar dispare din magazin (util când vrei să-l ascunzi temporar, fără să-l ștergi)." />
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
               <input type="checkbox" checked={form.featured} onChange={e => setForm(f => ({ ...f, featured: e.target.checked }))} />
               Recomandat
+              <Help text="Produsele bifate ca „Recomandat" pot fi scoase în evidență pe homepage sau în secțiuni speciale ale magazinului." />
             </label>
           </div>
           {error && <p style={{ color: 'var(--error)', fontSize: '0.85rem' }}>{error}</p>}
           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-            <button type="button" onClick={onClose} style={{ flex: 1, padding: '0.7rem', background: 'var(--bg-input)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 600 }}>Anul</button>
+            <button type="button" onClick={onClose} style={{ flex: 1, padding: '0.7rem', background: 'var(--bg-input)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 600 }}>Anulă</button>
             <button type="submit" disabled={saving} style={{ flex: 2, padding: '0.7rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
               {saving ? '⏳ Se salvează...' : '💾 Salvează'}
             </button>
@@ -206,6 +307,7 @@ function ProductModal({ product, categories, onSave, onClose, sb }: {
     </div>
   )
 }
+
 
 // ─── Order Detail Modal ───────────────────────────────────────────
 function OrderModal({ order, onClose, onUpdate, sb }: { order: any, onClose: () => void, onUpdate: () => void, sb: SupabaseClient }) {
@@ -364,6 +466,22 @@ export default function AdminPage() {
   const [orderSearch, setOrderSearch] = useState('')
   const [orderStatusFilter, setOrderStatusFilter] = useState('all')
 
+  // Toate atributele (filtrele) existente, extrase din produse — folosite ca sugestii
+  // atat la editarea unui produs, cat si in tab-ul Filtre.
+  const existingAttrs = useMemo(() => {
+    const map: Record<string, Set<string>> = {}
+    products.forEach(p => {
+      if (!p.attributes) return
+      Object.entries(p.attributes as Record<string, string>).forEach(([k, v]) => {
+        if (!map[k]) map[k] = new Set()
+        map[k].add(v)
+      })
+    })
+    const result: Record<string, string[]> = {}
+    Object.entries(map).forEach(([k, vs]) => { result[k] = Array.from(vs).sort() })
+    return result
+  }, [products])
+
   useEffect(() => {
     if (!sb) return
     sb.auth.getSession().then(({ data }: any) => {
@@ -492,9 +610,11 @@ export default function AdminPage() {
               placeholder="🔍 Caută după nume sau SKU..."
               value={productSearch}
               onChange={e => setProductSearch(e.target.value)}
+              title="Caută rapid un produs după numele sau codul (SKU) lui"
               style={{ flex: 1, minWidth: 200, padding: '0.6rem 0.75rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.9rem', outline: 'none' }}
             />
             <select value={productFilter} onChange={e => setProductFilter(e.target.value)}
+              title="Arată doar produsele dintr-o anumită stare (active, inactive, stoc mic sau epuizat)"
               style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem' }}>
               <option value="all">Toate ({products.length})</option>
               <option value="active">Active</option>
@@ -503,6 +623,7 @@ export default function AdminPage() {
               <option value="out">Stoc Epuizat</option>
             </select>
             <button onClick={() => setEditProduct({})}
+              title="Deschide formularul pentru a adăuga un produs nou în magazin"
               style={{ padding: '0.6rem 1rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.88rem', whiteSpace: 'nowrap' }}>
               ➕ Produs Nou
             </button>
@@ -608,13 +729,14 @@ export default function AdminPage() {
         <ContactRequests sb={sb!} />
       ) : null}
 
-      {tab === 'filtre' && sb && <FiltrePage sb={sb!} products={products} onRefresh={loadData} />}
+      {tab === 'filtre' && sb && <FiltrePage sb={sb!} products={products} existingAttrs={existingAttrs} onRefresh={loadData} />}
 
       {/* Modals */}
       {editProduct !== null && (
         <ProductModal
           product={editProduct?.id ? editProduct : null}
           categories={categories}
+          existingAttrs={existingAttrs}
           sb={sb!}
           onSave={() => { setEditProduct(null); loadData() }}
           onClose={() => setEditProduct(null)}
@@ -634,23 +756,8 @@ export default function AdminPage() {
 
 
 // ─── Filtre Page ──────────────────────────────────────────────────
-function FiltrePage({ sb, products, onRefresh }: { sb: any, products: any[], onRefresh: () => void }) {
-  // Extrage toate atributele existente din produse
-  const existingAttrs = useMemo(() => {
-    const map: Record<string, Set<string>> = {}
-    products.forEach(p => {
-      if (!p.attributes) return
-      Object.entries(p.attributes as Record<string, string>).forEach(([k, v]) => {
-        if (!map[k]) map[k] = new Set()
-        map[k].add(v)
-      })
-    })
-    const result: Record<string, string[]> = {}
-    Object.entries(map).forEach(([k, vs]) => { result[k] = Array.from(vs).sort() })
-    return result
-  }, [products])
-
-  // State pentru creare filtru nou
+function FiltrePage({ sb, products, existingAttrs, onRefresh }: { sb: any, products: any[], existingAttrs: Record<string, string[]>, onRefresh: () => void }) {
+  // Stare pentru creare filtru nou
   const [newKey, setNewKey] = useState('')
   const [newVal, setNewVal] = useState('')
   const [saving, setSaving] = useState(false)
@@ -738,9 +845,14 @@ function FiltrePage({ sb, products, onRefresh }: { sb: any, products: any[], onR
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-        Gestioneaza filtrele care apar pe pagina de produse. Filtrele sunt generate automat din atributele produselor.
-      </p>
+      <div className="card" style={{ background: 'rgba(0,217,255,0.05)' }}>
+        <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.7, marginBottom: '0.5rem' }}>
+          💡 <strong>Ce sunt filtrele?</strong> Sunt caracteristicile după care clienții pot căuta pe pagina de produse (ex: <em>Culoare</em>, <em>Material</em>, <em>Gramaj</em>). Fiecare filtru are una sau mai multe valori (ex: filtrul <em>Culoare</em> poate avea valorile <em>Alb</em>, <em>Negru</em>, <em>Roșu</em>).
+        </p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.7 }}>
+          Filtrele nu se creează separat — apar automat pe baza atributelor pe care le pui la fiecare produs (fie de aici, fie din fereastra de editare a produsului). Mai jos ai 3 secțiuni: vezi ce filtre există deja, adaugă un filtru la mai multe produse deodată, sau setează un filtru pentru un singur produs.
+        </p>
+      </div>
 
       {msg && (
         <div style={{ padding: '0.75rem 1rem', background: msg.includes('✅') ? 'rgba(72,187,120,0.1)' : msg.includes('⚠️') ? 'rgba(237,137,54,0.1)' : 'rgba(0,217,255,0.1)', border: `1px solid ${msg.includes('✅') ? 'var(--success)' : msg.includes('⚠️') ? 'var(--warning)' : 'var(--border)'}`, borderRadius: 8, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
@@ -750,8 +862,9 @@ function FiltrePage({ sb, products, onRefresh }: { sb: any, products: any[], onR
 
       {/* 1. Filtre existente */}
       <div className="card">
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '1rem' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
           🏷️ Filtre existente
+          <Help text="Lista tuturor filtrelor pe care le au deja produsele tale, cu toate valorile lor. Poți șterge un filtru întreg sau doar o singură valoare." />
         </h2>
         {Object.keys(existingAttrs).length === 0 ? (
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Niciun filtru creat inca. Adauga primul filtru mai jos.</p>
@@ -764,7 +877,7 @@ function FiltrePage({ sb, products, onRefresh }: { sb: any, products: any[], onR
                     {key}
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 400, marginLeft: '0.5rem' }}>({vals.length} valori)</span>
                   </span>
-                  <button onClick={() => deleteFilterKey(key)} style={{ padding: '0.2rem 0.6rem', background: 'rgba(245,101,101,0.1)', color: 'var(--error)', border: '1px solid var(--error)', borderRadius: 6, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
+                  <button onClick={() => deleteFilterKey(key)} title="Elimină acest filtru și toate valorile lui de la toate produsele" style={{ padding: '0.2rem 0.6rem', background: 'rgba(245,101,101,0.1)', color: 'var(--error)', border: '1px solid var(--error)', borderRadius: 6, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
                     🗑️ Sterge filtrul
                   </button>
                 </div>
@@ -772,7 +885,7 @@ function FiltrePage({ sb, products, onRefresh }: { sb: any, products: any[], onR
                   {vals.map(val => (
                     <span key={val} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.6rem', background: 'var(--bg-page)', border: '1px solid var(--border)', borderRadius: 20, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                       {val}
-                      <button onClick={() => deleteFilterValue(key, val)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.75rem', padding: 0, lineHeight: 1 }}>✕</button>
+                      <button onClick={() => deleteFilterValue(key, val)} title={`Elimină valoarea "${val}" de la produsele care o au`} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.75rem', padding: 0, lineHeight: 1 }}>✕</button>
                     </span>
                   ))}
                 </div>
@@ -784,22 +897,29 @@ function FiltrePage({ sb, products, onRefresh }: { sb: any, products: any[], onR
 
       {/* 2. Creeaza filtru nou */}
       <div className="card">
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
           ➕ Creeaza filtru nou
+          <Help text="Folosește asta când vrei să adaugi un filtru complet nou (ex: un filtru 'Diametru' care încă nu există la niciun produs) la mai multe produse deodată." />
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
           Adauga un filtru nou la toate produsele din catalog care nu il au inca.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 150 }}>
-            <label style={labelSty}>Nume filtru (cheie)</label>
+            <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
+              Nume filtru (cheie)
+              <Help text='Numele caracteristicii, ex: "Culoare", "Material", "Diametru". Va apărea ca titlu de filtru pe site.' />
+            </label>
             <input style={inputSty} value={newKey} onChange={e => setNewKey(e.target.value)} placeholder='ex: Culoare' list="existing-keys" />
             <datalist id="existing-keys">
               {Object.keys(existingAttrs).map(k => <option key={k} value={k} />)}
             </datalist>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 150 }}>
-            <label style={labelSty}>Valoare implicita</label>
+            <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
+              Valoare implicita
+              <Help text='Valoarea pe care o vor primi TOATE produsele care nu au încă acest filtru. Ex: dacă majoritatea produselor sunt "Alb", pune "Alb" aici — apoi corectezi individual excepțiile din secțiunea 3, mai jos.' />
+            </label>
             <input style={inputSty} value={newVal} onChange={e => setNewVal(e.target.value)} placeholder='ex: Alb' list="existing-vals" />
             <datalist id="existing-vals">
               {newKey && existingAttrs[newKey]?.map(v => <option key={v} value={v} />)}
@@ -816,8 +936,9 @@ function FiltrePage({ sb, products, onRefresh }: { sb: any, products: any[], onR
 
       {/* 3. Atribuie filtru la un produs specific */}
       <div className="card">
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
           🎯 Atribuie filtru la un produs specific
+          <Help text="Folosește asta pentru un singur produs — fie ca să corectezi o excepție (ex: un produs care are altă culoare decât restul), fie ca să adaugi un filtru doar la el." />
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
           Selecteaza un produs si seteaza sau schimba valoarea unui filtru pentru acel produs.
@@ -831,7 +952,10 @@ function FiltrePage({ sb, products, onRefresh }: { sb: any, products: any[], onR
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-            <label style={labelSty}>Produs</label>
+            <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
+              Produs
+              <Help text="Alege produsul căruia vrei să-i setezi un filtru." />
+            </label>
             <select style={{ ...inputSty, flex: 'none' }} value={selProduct} onChange={e => setSelProduct(e.target.value)}>
               <option value="">— Selecteaza produsul —</option>
               {products.map(p => (
@@ -857,14 +981,20 @@ function FiltrePage({ sb, products, onRefresh }: { sb: any, products: any[], onR
               })()}
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 140 }}>
-                  <label style={labelSty}>Filtru (cheie)</label>
+                  <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
+                    Filtru (cheie)
+                    <Help text='Numele filtrului, ex: "Culoare". Dacă produsul are deja acest filtru, valoarea lui va fi înlocuită cu cea nouă.' />
+                  </label>
                   <input style={inputSty} value={attrKey} onChange={e => setAttrKey(e.target.value)} placeholder='ex: Culoare' list="akey-list" />
                   <datalist id="akey-list">
                     {Object.keys(existingAttrs).map(k => <option key={k} value={k} />)}
                   </datalist>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 140 }}>
-                  <label style={labelSty}>Valoare</label>
+                  <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
+                    Valoare
+                    <Help text='Valoarea filtrului pentru acest produs, ex: "Violet". Poți alege una din sugestiile deja folosite sau scrie una nouă.' />
+                  </label>
                   <input style={inputSty} value={attrVal} onChange={e => setAttrVal(e.target.value)} placeholder='ex: Violet' list="aval-list" />
                   <datalist id="aval-list">
                     {attrKey && existingAttrs[attrKey]?.map(v => <option key={v} value={v} />)}
