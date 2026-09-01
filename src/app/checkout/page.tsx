@@ -9,7 +9,7 @@ type Shipping = 'sameday' | 'sediu'
 type Payment = 'card' | 'transfer' | 'ramburs'
 
 export default function CheckoutPage() {
-  const { cart, total, clearCart } = useCart()
+  const { cart, total, clearCart, updateQty, removeFromCart } = useCart()
   const router = useRouter()
   const [shipping, setShipping] = useState<Shipping>('sameday')
   const [payment, setPayment] = useState<Payment>('card')
@@ -51,6 +51,22 @@ export default function CheckoutPage() {
         }),
       })
       const data = await res.json()
+
+      if (res.status === 409 && data.error === 'insufficient_stock') {
+        // Stocul s-a schimbat intre timp (produsul a stat "uitat" in cos si intre timp
+        // s-a vandut) — actualizam cosul cu stocul real si il lasam pe client sa retrimita.
+        const lines = (data.insufficient || [])
+          .map((i: any) => `• ${i.name}: ai ${i.requested} în coș, dar mai sunt disponibile doar ${i.available}`)
+          .join('\n')
+        for (const i of data.insufficient || []) {
+          if (i.available > 0) updateQty(i.id, i.available)
+          else removeFromCart(i.id)
+        }
+        alert(`Din păcate stocul s-a schimbat între timp pentru unele produse din coș:\n\n${lines}\n\nAm actualizat coșul — te rugăm verifică și trimite comanda din nou.`)
+        setLoading(false)
+        return
+      }
+
       if (!data.success) throw new Error(data.error || 'Eroare')
 
       if (payment === 'card') {
