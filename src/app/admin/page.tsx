@@ -956,7 +956,17 @@ function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb
       }
     }
     const catName = newFilterCategory ? categories.find(c => c.id === newFilterCategory)?.name : null
-    setMsg(`✅ Filtrul "${newKey}: ${newVal}" a fost adaugat la ${count} produse${catName ? ` din categoria "${catName}"` : ''} care nu il aveau.`)
+    const scopeLabel = catName ? `din categoria "${catName}"` : 'din magazin'
+    if (count === 0) {
+      // Nimic nu s-a modificat — explicam de ce, ca sa nu para o reusita falsa.
+      if (targetProducts.length === 0) {
+        setMsg(`⚠️ Nu exista niciun produs ${scopeLabel} — nu era ce sa modificam. Adauga intai un produs in aceasta categorie.`)
+      } else {
+        setMsg(`⚠️ Toate cele ${targetProducts.length} produse ${scopeLabel} au deja filtrul "${newKey}" completat (cu alte valori), asa ca niciunul nu a fost modificat — acest buton adauga filtrul DOAR la produsele care nu il au deloc, nu adauga o valoare noua la unul care il are deja. Ca sa faci "${newVal}" o valoare selectabila pentru "${newKey}", foloseste secțiunea 3 de mai jos ("Atribuie filtru la un produs specific") pe produsul potrivit.`)
+      }
+    } else {
+      setMsg(`✅ Filtrul "${newKey}: ${newVal}" a fost adaugat la ${count} produse ${scopeLabel} care nu il aveau.`)
+    }
     setSaving(false)
     onRefresh()
   }
@@ -1111,7 +1121,7 @@ function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb
           </button>
         </div>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: '0.5rem' }}>
-          * Filtrul se aplică doar în categoria aleasă mai sus (sau în tot magazinul, dacă lași "Toate categoriile"), și doar la produsele care nu au încă această cheie. Produsele care au deja o valoare pentru acest filtru nu sunt modificate.
+          * Filtrul se aplică doar în categoria aleasă mai sus (sau în tot magazinul, dacă lași "Toate categoriile"), și doar la produsele care nu au încă această cheie. Produsele care au deja o valoare pentru acest filtru nu sunt modificate — deci acest buton NU adaugă o valoare nouă la un filtru pe care produsele îl au deja (ex: nu poți adăuga "Verde" ca opțiune nouă la "Culoare" dacă toate produsele au deja o culoare setată). Pentru asta, folosește secțiunea 3, mai jos.
         </p>
       </div>
 
