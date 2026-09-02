@@ -923,68 +923,81 @@ export default function AdminPage() {
 
 // ─── Filtre Page ──────────────────────────────────────────────────
 function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb: any, products: any[], categories: any[], existingAttrs: Record<string, string[]>, onRefresh: () => void }) {
-  // Stare pentru creare filtru nou
-  const [newKey, setNewKey] = useState('')
-  const [newVal, setNewVal] = useState('')
-  const [newFilterCategory, setNewFilterCategory] = useState('') // '' = toate categoriile
-  const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
 
-  // State pentru atribuire filtru la produs
-  const [selProduct, setSelProduct] = useState('')
-  const [attrKey, setAttrKey] = useState('')
-  const [attrVal, setAttrVal] = useState('')
-  const [assigning, setAssigning] = useState(false)
-  const [assignMsg, setAssignMsg] = useState('')
+  // ── Stare pentru "Atribuie filtru la produse" (sectiunea unificata de bulk-assign) ──
+  const [bulkKey, setBulkKey] = useState('')
+  const [bulkVal, setBulkVal] = useState('')
+  const [scope, setScope] = useState<'all' | 'category' | 'manual'>('category')
+  const [scopeCategory, setScopeCategory] = useState('')
+  const [manualSearch, setManualSearch] = useState('')
+  const [manualSelected, setManualSelected] = useState<Set<string>>(new Set())
+  const [applying, setApplying] = useState(false)
+  const [bulkMsg, setBulkMsg] = useState('')
 
-  // Aplica filtru nou la produsele care nu il au (din categoria selectata, sau din tot magazinul daca nu e aleasa niciuna)
-  async function createAndApplyFilter() {
-    if (!newKey.trim() || !newVal.trim()) { setMsg('⚠️ Completeaza cheia si valoarea!'); return }
-    setSaving(true)
-    setMsg('')
-    const targetProducts = newFilterCategory
-      ? products.filter(p => p.category_id === newFilterCategory)
-      : products
-    let count = 0
-    for (const p of targetProducts) {
-      const attrs = (p.attributes as Record<string, string>) || {}
-      if (!attrs[newKey]) {
-        await sb.from('products').update({
-          attributes: { ...attrs, [newKey]: newVal }
-        }).eq('id', p.id)
-        count++
-      }
-    }
-    const catName = newFilterCategory ? categories.find(c => c.id === newFilterCategory)?.name : null
-    const scopeLabel = catName ? `din categoria "${catName}"` : 'din magazin'
-    if (count === 0) {
-      // Nimic nu s-a modificat — explicam de ce, ca sa nu para o reusita falsa.
-      if (targetProducts.length === 0) {
-        setMsg(`⚠️ Nu exista niciun produs ${scopeLabel} — nu era ce sa modificam. Adauga intai un produs in aceasta categorie.`)
-      } else {
-        setMsg(`⚠️ Toate cele ${targetProducts.length} produse ${scopeLabel} au deja filtrul "${newKey}" completat (cu alte valori), asa ca niciunul nu a fost modificat — acest buton adauga filtrul DOAR la produsele care nu il au deloc, nu adauga o valoare noua la unul care il are deja. Ca sa faci "${newVal}" o valoare selectabila pentru "${newKey}", foloseste secțiunea 3 de mai jos ("Atribuie filtru la un produs specific") pe produsul potrivit.`)
-      }
-    } else {
-      setMsg(`✅ Filtrul "${newKey}: ${newVal}" a fost adaugat la ${count} produse ${scopeLabel} care nu il aveau.`)
-    }
-    setSaving(false)
-    onRefresh()
+  // Produsele vizate de scope-ul curent (folosit si pentru numarul afisat pe buton, si la aplicare)
+  function getTargetProducts() {
+    if (scope === 'all') return products
+    if (scope === 'category') return scopeCategory ? products.filter(p => p.category_id === scopeCategory) : []
+    return products.filter(p => manualSelected.has(p.id))
+  }
+  const targetProducts = getTargetProducts()
+
+  // Lista filtrata (dupa cautare + optional categorie) pentru checkbox-urile din modul "manual"
+  const manualCategoryFilter = scopeCategory
+  const manualVisibleProducts = products.filter(p => {
+    if (manualCategoryFilter && p.category_id !== manualCategoryFilter) return false
+    if (manualSearch.trim() && !p.name.toLowerCase().includes(manualSearch.trim().toLowerCase())) return false
+    return true
+  })
+
+  function toggleManual(id: string) {
+    setManualSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+  function selectAllVisible() {
+    setManualSelected(prev => {
+      const next = new Set(prev)
+      manualVisibleProducts.forEach(p => next.add(p.id))
+      return next
+    })
+  }
+  function deselectAllVisible() {
+    setManualSelected(prev => {
+      const next = new Set(prev)
+      manualVisibleProducts.forEach(p => next.delete(p.id))
+      return next
+    })
   }
 
-  // Atribuie un filtru specific unui singur produs
-  async function assignToProduct() {
-    if (!selProduct || !attrKey.trim() || !attrVal.trim()) { setAssignMsg('⚠️ Selecteaza produsul si completeaza filtrul!'); return }
-    setAssigning(true)
-    setAssignMsg('')
-    const p = products.find(x => x.id === selProduct)
-    if (!p) { setAssignMsg('Produs negasit'); setAssigning(false); return }
-    const attrs = (p.attributes as Record<string, string>) || {}
-    const { error } = await sb.from('products').update({
-      attributes: { ...attrs, [attrKey]: attrVal }
-    }).eq('id', p.id)
-    if (error) { setAssignMsg('❌ Eroare: ' + error.message) }
-    else { setAssignMsg(`✅ Filtrul "${attrKey}: ${attrVal}" a fost atribuit produsului "${p.name}".`) }
-    setAssigning(false)
+  // Aplica filtrul (cheie: valoare) la TOATE produsele vizate de scope — indiferent daca
+  // il au deja sau nu (suprascrie), ca sa mearga la fel de simplu si pentru 1 produs,
+  // si pentru o categorie intreaga, si pentru tot magazinul.
+  async function applyBulkFilter() {
+    if (!bulkKey.trim() || !bulkVal.trim()) { setBulkMsg('⚠️ Completează numele filtrului și valoarea!'); return }
+    const targets = getTargetProducts()
+    if (targets.length === 0) {
+      setBulkMsg(scope === 'manual' ? '⚠️ Nu ai bifat niciun produs.' : '⚠️ Nu există niciun produs în această selecție.')
+      return
+    }
+    if (targets.length > 15 && !confirm(`Aplici filtrul "${bulkKey}: ${bulkVal}" la ${targets.length} produse. Dacă vreunul avea deja o valoare pentru "${bulkKey}", va fi înlocuită. Continui?`)) {
+      return
+    }
+    setApplying(true)
+    setBulkMsg('')
+    const BATCH = 20
+    for (let i = 0; i < targets.length; i += BATCH) {
+      const chunk = targets.slice(i, i + BATCH)
+      await Promise.all(chunk.map(p => {
+        const attrs = (p.attributes as Record<string, string>) || {}
+        return sb.from('products').update({ attributes: { ...attrs, [bulkKey]: bulkVal } }).eq('id', p.id)
+      }))
+    }
+    setBulkMsg(`✅ Filtrul "${bulkKey}: ${bulkVal}" a fost aplicat la ${targets.length} produse.`)
+    setApplying(false)
     onRefresh()
   }
 
@@ -1031,7 +1044,7 @@ function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb
           💡 <strong>Ce sunt filtrele?</strong> Sunt caracteristicile după care clienții pot căuta pe pagina de produse (ex: <em>Culoare</em>, <em>Material</em>, <em>Gramaj</em>). Fiecare filtru are una sau mai multe valori (ex: filtrul <em>Culoare</em> poate avea valorile <em>Alb</em>, <em>Negru</em>, <em>Roșu</em>).
         </p>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.7 }}>
-          Filtrele nu se creează separat — apar automat pe baza atributelor pe care le pui la fiecare produs (fie de aici, fie din fereastra de editare a produsului). Mai jos ai 3 secțiuni: vezi ce filtre există deja, adaugă un filtru la mai multe produse deodată, sau setează un filtru pentru un singur produs.
+          Filtrele nu se creează separat — apar automat pe baza atributelor pe care le pui la fiecare produs (fie de aici, fie din fereastra de editare a produsului). Mai jos vezi ce filtre există deja, apoi poți atribui unul nou (sau schimba unul existent) la 1 produs, la o categorie întreagă, sau la tot magazinul, dintr-un singur loc.
         </p>
       </div>
 
@@ -1076,129 +1089,122 @@ function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb
         )}
       </div>
 
-      {/* 2. Creeaza filtru nou */}
+      {/* 2. Atribuie filtru la produse — sectiune unica, merge la 1 produs, la o categorie sau la toate */}
       <div className="card">
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
-          ➕ Creeaza filtru nou
-          <Help text="Folosește asta când vrei să adaugi un filtru complet nou (ex: un filtru 'Diametru' care încă nu există la niciun produs) la mai multe produse deodată." />
+          🎯 Atribuie filtru la produse
+          <Help text='Setează un filtru (cheie + valoare) pe produsele pe care le alegi mai jos — poate fi un singur produs, o categorie întreagă, sau tot magazinul. Dacă produsul avea deja o valoare pentru acel filtru, e înlocuită cu cea nouă.' />
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-          Adaugă un filtru nou la produsele care nu îl au încă — alege mai jos dacă îl aplici la o singură categorie sau la tot magazinul.
+          Scrie filtrul (cheie + valoare), alege pe cine se aplică, apoi apasă Aplică. Merge la fel de simplu pentru 1 produs, pentru o categorie, sau pentru tot magazinul.
         </p>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 170 }}>
-            <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
-              Se aplică la
-              <Help text='Alege o categorie ca filtrul să se adauge DOAR la produsele din ea (ex: "Culoare" doar la Filamente). Lasă pe "Toate categoriile" doar dacă filtrul chiar are sens peste tot în magazin.' />
-            </label>
-            <select style={{ ...inputSty, flex: 'none' }} value={newFilterCategory} onChange={e => setNewFilterCategory(e.target.value)}>
-              <option value="">Toate categoriile</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+
+        {bulkMsg && (
+          <div style={{ padding: '0.6rem 1rem', background: bulkMsg.includes('✅') ? 'rgba(72,187,120,0.1)' : 'rgba(237,137,54,0.1)', border: `1px solid ${bulkMsg.includes('✅') ? 'var(--success)' : 'var(--warning)'}`, borderRadius: 8, fontSize: '0.88rem', color: 'var(--text-primary)', marginBottom: '1rem' }}>
+            {bulkMsg}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 150 }}>
+        )}
+
+        {/* Cheie + valoare */}
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 160 }}>
             <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
-              Nume filtru (cheie)
-              <Help text='Numele caracteristicii, ex: "Culoare", "Material", "Diametru". Va apărea ca titlu de filtru pe site.' />
+              Filtru (cheie)
+              <Help text='Numele caracteristicii, ex: "Culoare", "Material", "Diametru".' />
             </label>
-            <input style={inputSty} value={newKey} onChange={e => setNewKey(e.target.value)} placeholder='ex: Culoare' list="existing-keys" />
+            <input style={inputSty} value={bulkKey} onChange={e => setBulkKey(e.target.value)} placeholder='ex: Culoare' list="existing-keys" />
             <datalist id="existing-keys">
               {Object.keys(existingAttrs).map(k => <option key={k} value={k} />)}
             </datalist>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 150 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 160 }}>
             <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
-              Valoare implicita
-              <Help text='Valoarea pe care o vor primi produsele vizate (categoria aleasă mai sus, sau toate) care nu au încă acest filtru. Ex: dacă majoritatea sunt "Alb", pune "Alb" aici — apoi corectezi individual excepțiile din secțiunea 3, mai jos.' />
+              Valoare
+              <Help text='Valoarea pe care o vor primi produsele alese, ex: "Verde". Poți alege din sugestii sau scrie una nouă.' />
             </label>
-            <input style={inputSty} value={newVal} onChange={e => setNewVal(e.target.value)} placeholder='ex: Alb' list="existing-vals" />
+            <input style={inputSty} value={bulkVal} onChange={e => setBulkVal(e.target.value)} placeholder='ex: Verde' list="existing-vals" />
             <datalist id="existing-vals">
-              {newKey && existingAttrs[newKey]?.map(v => <option key={v} value={v} />)}
+              {bulkKey && existingAttrs[bulkKey]?.map(v => <option key={v} value={v} />)}
             </datalist>
           </div>
-          <button onClick={createAndApplyFilter} disabled={saving} style={{ padding: '0.6rem 1.25rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
-            {saving ? '⏳...' : '✓ Creeaza filtrul'}
-          </button>
         </div>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: '0.5rem' }}>
-          * Filtrul se aplică doar în categoria aleasă mai sus (sau în tot magazinul, dacă lași "Toate categoriile"), și doar la produsele care nu au încă această cheie. Produsele care au deja o valoare pentru acest filtru nu sunt modificate — deci acest buton NU adaugă o valoare nouă la un filtru pe care produsele îl au deja (ex: nu poți adăuga "Verde" ca opțiune nouă la "Culoare" dacă toate produsele au deja o culoare setată). Pentru asta, folosește secțiunea 3, mai jos.
-        </p>
-      </div>
 
-      {/* 3. Atribuie filtru la un produs specific */}
-      <div className="card">
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
-          🎯 Atribuie filtru la un produs specific
-          <Help text="Folosește asta pentru un singur produs — fie ca să corectezi o excepție (ex: un produs care are altă culoare decât restul), fie ca să adaugi un filtru doar la el." />
-        </h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-          Selecteaza un produs si seteaza sau schimba valoarea unui filtru pentru acel produs.
-        </p>
+        {/* Scope: 1 produs / o categorie / toate */}
+        <div style={{ marginBottom: '0.75rem' }}>
+          <label style={{ ...labelSty, display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+            Se aplică la
+            <Help text='"O categorie" = toate produsele din categoria aleasă. "Aleg eu produsele" = bifezi individual (bun și pentru un singur produs). "Tot magazinul" = literalmente toate produsele.' />
+          </label>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {([
+              ['category', '📂 O categorie'],
+              ['manual', '☑️ Aleg eu produsele'],
+              ['all', '🌐 Tot magazinul'],
+            ] as const).map(([val, label]) => (
+              <button key={val} type="button" onClick={() => setScope(val)}
+                style={{
+                  padding: '0.5rem 1rem', borderRadius: 20, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
+                  border: `1px solid ${scope === val ? 'var(--primary)' : 'var(--border)'}`,
+                  background: scope === val ? 'rgba(0,217,255,0.12)' : 'var(--bg-input)',
+                  color: scope === val ? 'var(--primary)' : 'var(--text-secondary)',
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-        {assignMsg && (
-          <div style={{ padding: '0.6rem 1rem', background: assignMsg.includes('✅') ? 'rgba(72,187,120,0.1)' : 'rgba(245,101,101,0.1)', border: `1px solid ${assignMsg.includes('✅') ? 'var(--success)' : 'var(--error)'}`, borderRadius: 8, fontSize: '0.88rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
-            {assignMsg}
+        {/* Selector categorie — vizibil pentru "category", si folosit ca sa restrangi si lista din "manual" */}
+        {(scope === 'category' || scope === 'manual') && (
+          <div style={{ marginBottom: '0.75rem', maxWidth: 320 }}>
+            <select style={inputSty} value={scopeCategory} onChange={e => setScopeCategory(e.target.value)}>
+              <option value="">{scope === 'category' ? '— Alege categoria —' : 'Toate categoriile'}</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-            <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
-              Produs
-              <Help text="Alege produsul căruia vrei să-i setezi un filtru." />
-            </label>
-            <select style={{ ...inputSty, flex: 'none' }} value={selProduct} onChange={e => setSelProduct(e.target.value)}>
-              <option value="">— Selecteaza produsul —</option>
-              {products.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-          {selProduct && (
-            <>
-              {/* Show current attributes of selected product */}
-              {(() => {
-                const p = products.find(x => x.id === selProduct)
-                const attrs = (p?.attributes as Record<string,string>) || {}
-                if (Object.keys(attrs).length > 0) return (
-                  <div style={{ padding: '0.6rem 0.75rem', background: 'var(--bg-input)', borderRadius: 8, fontSize: '0.82rem' }}>
-                    <span style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }}>Filtre curente:</span>
-                    {Object.entries(attrs).map(([k,v]) => (
-                      <span key={k} style={{ marginRight: '0.5rem', padding: '0.15rem 0.5rem', background: 'var(--bg-hover)', borderRadius: 12, color: 'var(--primary)', fontSize: '0.8rem' }}>{k}: {v}</span>
-                    ))}
-                  </div>
+        {/* Lista de bifat — doar in modul "manual" */}
+        {scope === 'manual' && (
+          <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', marginBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', padding: '0.6rem 0.75rem', background: 'var(--bg-input)', borderBottom: '1px solid var(--border)' }}>
+              <input style={{ ...inputSty, padding: '0.4rem 0.6rem' }} placeholder="🔍 Caută produs..." value={manualSearch} onChange={e => setManualSearch(e.target.value)} />
+              <button type="button" onClick={selectAllVisible} style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                Bifează tot
+              </button>
+              <button type="button" onClick={deselectAllVisible} style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                Debifează
+              </button>
+            </div>
+            <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+              {manualVisibleProducts.length === 0 ? (
+                <p style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Niciun produs găsit.</p>
+              ) : manualVisibleProducts.map(p => {
+                const attrs = (p.attributes as Record<string, string>) || {}
+                const currentVal = bulkKey ? attrs[bulkKey] : null
+                return (
+                  <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem 0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border)', fontSize: '0.85rem' }}>
+                    <input type="checkbox" checked={manualSelected.has(p.id)} onChange={() => toggleManual(p.id)} />
+                    <span style={{ color: 'var(--text-primary)', flex: 1 }}>{p.name}</span>
+                    {currentVal && (
+                      <span style={{ padding: '0.1rem 0.5rem', background: 'var(--bg-hover)', borderRadius: 10, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                        {bulkKey}: {currentVal}
+                      </span>
+                    )}
+                  </label>
                 )
-                return null
-              })()}
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 140 }}>
-                  <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
-                    Filtru (cheie)
-                    <Help text='Numele filtrului, ex: "Culoare". Dacă produsul are deja acest filtru, valoarea lui va fi înlocuită cu cea nouă.' />
-                  </label>
-                  <input style={inputSty} value={attrKey} onChange={e => setAttrKey(e.target.value)} placeholder='ex: Culoare' list="akey-list" />
-                  <datalist id="akey-list">
-                    {Object.keys(existingAttrs).map(k => <option key={k} value={k} />)}
-                  </datalist>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 140 }}>
-                  <label style={{ ...labelSty, display: 'flex', alignItems: 'center' }}>
-                    Valoare
-                    <Help text='Valoarea filtrului pentru acest produs, ex: "Violet". Poți alege una din sugestiile deja folosite sau scrie una nouă.' />
-                  </label>
-                  <input style={inputSty} value={attrVal} onChange={e => setAttrVal(e.target.value)} placeholder='ex: Violet' list="aval-list" />
-                  <datalist id="aval-list">
-                    {attrKey && existingAttrs[attrKey]?.map(v => <option key={v} value={v} />)}
-                  </datalist>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-                  <button onClick={assignToProduct} disabled={assigning} style={{ padding: '0.6rem 1.25rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem' }}>
-                    {assigning ? '⏳...' : '✓ Atribuie'}
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
+              })}
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <button onClick={applyBulkFilter} disabled={applying} style={{ padding: '0.6rem 1.25rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+            {applying ? '⏳...' : `✓ Aplică la ${targetProducts.length} produs${targetProducts.length === 1 ? '' : 'e'}`}
+          </button>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+            * Suprascrie valoarea existentă a filtrului la produsele care îl au deja.
+          </span>
         </div>
       </div>
     </div>
