@@ -925,6 +925,36 @@ export default function AdminPage() {
 function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb: any, products: any[], categories: any[], existingAttrs: Record<string, string[]>, onRefresh: () => void }) {
   const [msg, setMsg] = useState('')
 
+  // ── Filtre "goale" (create dar inca neatribuite niciunui produs), tinute in tabela filter_keys ──
+  const [emptyKeys, setEmptyKeys] = useState<string[]>([])
+  const [newFilterName, setNewFilterName] = useState('')
+  const [creatingFilter, setCreatingFilter] = useState(false)
+
+  useEffect(() => {
+    sb.from('filter_keys').select('key').order('key').then(({ data }: any) => {
+      setEmptyKeys((data || []).map((r: any) => r.key))
+    })
+  }, [sb])
+
+  // Lista completa afisata in "Filtre existente": cele derivate din produse + cele create dar goale
+  const displayFilters: Record<string, string[]> = { ...existingAttrs }
+  for (const k of emptyKeys) {
+    if (!(k in displayFilters)) displayFilters[k] = []
+  }
+
+  async function createFilterKey() {
+    const key = newFilterName.trim()
+    if (!key) { setMsg('⚠️ Scrie numele noului filtru!'); return }
+    if (key in existingAttrs || emptyKeys.includes(key)) { setMsg(`⚠️ Filtrul "${key}" există deja.`); return }
+    setCreatingFilter(true)
+    const { error } = await sb.from('filter_keys').insert({ key })
+    setCreatingFilter(false)
+    if (error) { setMsg(`⚠️ Nu am putut crea filtrul (${error.message}).`); return }
+    setEmptyKeys(prev => [...prev, key].sort())
+    setNewFilterName('')
+    setMsg(`✅ Filtrul "${key}" a fost creat. Acum îl poți atribui la produse mai jos.`)
+  }
+
   // ── Stare pentru "Atribuie filtru la produse" (sectiunea unificata de bulk-assign) ──
   const [bulkKey, setBulkKey] = useState('')
   const [bulkVal, setBulkVal] = useState('')
@@ -1011,6 +1041,11 @@ function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb
         await sb.from('products').update({ attributes: attrs }).eq('id', p.id)
       }
     }
+    // Daca era doar un filtru "creat gol" (fara produse), il stergem si din filter_keys
+    if (emptyKeys.includes(key)) {
+      await sb.from('filter_keys').delete().eq('key', key)
+      setEmptyKeys(prev => prev.filter(k => k !== key))
+    }
     setMsg(`🗑️ Filtrul "${key}" a fost sters de la toate produsele.`)
     onRefresh()
   }
@@ -1044,7 +1079,7 @@ function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb
           💡 <strong>Ce sunt filtrele?</strong> Sunt caracteristicile după care clienții pot căuta pe pagina de produse (ex: <em>Culoare</em>, <em>Material</em>, <em>Gramaj</em>). Fiecare filtru are una sau mai multe valori (ex: filtrul <em>Culoare</em> poate avea valorile <em>Alb</em>, <em>Negru</em>, <em>Roșu</em>).
         </p>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.7 }}>
-          Filtrele nu se creează separat — apar automat pe baza atributelor pe care le pui la fiecare produs (fie de aici, fie din fereastra de editare a produsului). Mai jos vezi ce filtre există deja, apoi poți atribui unul nou (sau schimba unul existent) la 1 produs, la o categorie întreagă, sau la tot magazinul, dintr-un singur loc.
+          Mai jos vezi ce filtre există deja. Poți crea un filtru nou (doar numele, fără produse) sau îl poți atribui direct la 1 produs, la o categorie întreagă, sau la tot magazinul, dintr-un singur loc.
         </p>
       </div>
 
@@ -1060,16 +1095,18 @@ function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb
           🏷️ Filtre existente
           <Help text="Lista tuturor filtrelor pe care le au deja produsele tale, cu toate valorile lor. Poți șterge un filtru întreg sau doar o singură valoare." />
         </h2>
-        {Object.keys(existingAttrs).length === 0 ? (
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Niciun filtru creat inca. Adauga primul filtru mai jos.</p>
+        {Object.keys(displayFilters).length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Niciun filtru creat inca. Creează primul filtru mai jos.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {Object.entries(existingAttrs).map(([key, vals]) => (
+            {Object.entries(displayFilters).map(([key, vals]) => (
               <div key={key} style={{ background: 'var(--bg-input)', borderRadius: 10, padding: '0.75rem 1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
                     {key}
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 400, marginLeft: '0.5rem' }}>({vals.length} valori)</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 400, marginLeft: '0.5rem' }}>
+                      {vals.length === 0 ? '(0 valori — încă neatribuit niciunui produs)' : `(${vals.length} valori)`}
+                    </span>
                   </span>
                   <button onClick={() => deleteFilterKey(key)} title="Elimină acest filtru și toate valorile lui de la toate produsele" style={{ padding: '0.2rem 0.6rem', background: 'rgba(245,101,101,0.1)', color: 'var(--error)', border: '1px solid var(--error)', borderRadius: 6, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
                     🗑️ Sterge filtrul
@@ -1089,7 +1126,24 @@ function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb
         )}
       </div>
 
-      {/* 2. Atribuie filtru la produse — sectiune unica, merge la 1 produs, la o categorie sau la toate */}
+      {/* 2. Creează filtru nou — inregistreaza doar numele, fara sa il pui inca pe niciun produs */}
+      <div className="card">
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
+          ➕ Creează filtru nou
+          <Help text='Înregistrează un filtru nou (doar numele, ex: "Diametru"), ca să apară în lista de mai sus și în sugestii — fără să-l pui încă pe niciun produs. Îl atribui la produse în secțiunea de mai jos, oricând vrei.' />
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+          Scrie doar numele filtrului. Nu are nevoie de valori sau produse acum — le adaugi mai târziu la "Atribuie filtru".
+        </p>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <input style={{ ...inputSty, maxWidth: 320 }} value={newFilterName} onChange={e => setNewFilterName(e.target.value)} placeholder='ex: Diametru' onKeyDown={e => { if (e.key === 'Enter') createFilterKey() }} />
+          <button onClick={createFilterKey} disabled={creatingFilter} style={{ padding: '0.6rem 1.25rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+            {creatingFilter ? '⏳...' : '➕ Creează filtrul'}
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Atribuie filtru la produse — sectiune unica, merge la 1 produs, la o categorie sau la toate */}
       <div className="card">
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
           🎯 Atribuie filtru la produse
@@ -1114,7 +1168,7 @@ function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb
             </label>
             <input style={inputSty} value={bulkKey} onChange={e => setBulkKey(e.target.value)} placeholder='ex: Culoare' list="existing-keys" />
             <datalist id="existing-keys">
-              {Object.keys(existingAttrs).map(k => <option key={k} value={k} />)}
+              {Object.keys(displayFilters).map(k => <option key={k} value={k} />)}
             </datalist>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, minWidth: 160 }}>
@@ -1124,7 +1178,7 @@ function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb
             </label>
             <input style={inputSty} value={bulkVal} onChange={e => setBulkVal(e.target.value)} placeholder='ex: Verde' list="existing-vals" />
             <datalist id="existing-vals">
-              {bulkKey && existingAttrs[bulkKey]?.map(v => <option key={v} value={v} />)}
+              {bulkKey && displayFilters[bulkKey]?.map(v => <option key={v} value={v} />)}
             </datalist>
           </div>
         </div>
