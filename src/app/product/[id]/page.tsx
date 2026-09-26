@@ -78,7 +78,7 @@ export default function ProductPage() {
               <table className="specs-table">
                 <tbody>
                   {Object.entries(product.attributes).map(([k, v]) => (
-                    <tr key={k}><td>{k}</td><td>{v}</td></tr>
+                    <tr key={k}><td>{k}</td><td>{Array.isArray(v) ? v.join(', ') : v}</td></tr>
                   ))}
                 </tbody>
               </table>
@@ -94,7 +94,7 @@ export default function ProductPage() {
           {product.sku && <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '1.25rem' }}>SKU: {product.sku}</p>}
 
           <div style={{ marginBottom: '1.25rem' }}>
-            <span className="product-detail-price">{price.toFixed(2)} RON</span>
+            <span className="product-detail-price" style={{ display: "block", textAlign: "center" }}>{price.toFixed(2)} RON</span>
             {product.sale_price && (
               <span style={{ color: 'var(--text-muted)', textDecoration: 'line-through', fontSize: '1.1rem', marginLeft: '0.75rem' }}>{parseFloat(String(product.price ?? 0)).toFixed(2)} RON</span>
             )}

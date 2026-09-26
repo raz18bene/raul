@@ -31,18 +31,14 @@ const CHIP_SVG = (
 )
 const PRINT_SVG = (
   <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-    <rect x="5" y="16" width="34" height="16" rx="3" stroke="var(--primary)" strokeWidth="2"/>
-    <path d="M12 16V11a2 2 0 012-2h16a2 2 0 012 2v5" stroke="var(--primary)" strokeWidth="2"/>
-    <rect x="12" y="22" width="20" height="10" rx="1.5" stroke="var(--primary)" strokeWidth="1.5"/>
-    <circle cx="35" cy="24" r="2" fill="var(--primary)"/>
-    <line x1="16" y1="26" x2="28" y2="26" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="16" y1="29" x2="23" y2="29" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="22" y1="11" x2="22" y2="4" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M19 7l3-3 3 3" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M22 6L8 14v16l14 8 14-8V14L22 6z" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round"/>
+    <path d="M8 14l14 8 14-8" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round"/>
+    <line x1="22" y1="22" x2="22" y2="38" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="22" y1="16" x2="22" y2="20" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" opacity="0.6"/>
   </svg>
 )
 const GEAR_SVG = (
-  <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+  <svg width="44" height="44" viewBox="0 0 40 40" fill="none">
     <path d="M20 6l2.5 1.5 2-1 2 2-1 2L27 13v4l-1.5 2.5 1 2-2 2-2-1L20 24l-2.5-1.5-2 1-2-2 1-2L13 17v-4l1.5-2.5-1-2 2-2 2 1z" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round"/>
     <circle cx="20" cy="17" r="4" stroke="var(--primary)" strokeWidth="2"/>
     <circle cx="31" cy="28" r="4" stroke="var(--primary)" strokeWidth="1.5"/>
@@ -75,15 +71,21 @@ export default function HomePage() {
 
         <div className="visual-grid">
           {[
-            { icon: SPOOL_SVG, title: 'Filamente 3D', desc: 'Peste 150 de variante' },
-            { icon: CHIP_SVG, title: 'Componente', desc: 'Electronice de calitate' },
-            { icon: PRINT_SVG, title: 'Print 3D Custom', desc: 'La comandă în 24-48h' },
+            { href: '/filamente', icon: SPOOL_SVG, title: 'Filamente 3D', desc: 'Peste 150 de variante' },
+            { href: '/componente', icon: CHIP_SVG, title: 'Componente', desc: 'Electronice de calitate' },
+            { href: '/print3d', icon: PRINT_SVG, title: 'Print 3D Custom', desc: 'La comandă în 24-48h' },
+            { href: '/accesorii', icon: GEAR_SVG, title: 'Piese Imprimante 3D', desc: 'Piese de schimb' },
           ].map((item, i) => (
-            <div key={i} className="grid-item" style={{ animationDelay: `${0.7 + i * 0.1}s` }}>
+            <Link
+              key={i}
+              href={item.href}
+              className="grid-item"
+              style={{ animationDelay: `${0.7 + i * 0.1}s`, cursor: 'pointer' }}
+            >
               <div className="item-icon">{item.icon}</div>
               <h3>{item.title}</h3>
               <p>{item.desc}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -95,7 +97,7 @@ export default function HomePage() {
           {[
             { n: '01', t: 'Livrare Rapidă', d: 'Comenzi procesate în aceeași zi. Livrare în toată țara în 24-48h.' },
             { n: '02', t: 'Stoc Permanent', d: 'Mii de produse disponibile imediat. Stoc actualizat în timp real.' },
-            { n: '03', t: 'Servicii Custom', d: 'Print 3D și gravare laser personalizate după specificațiile tale.' },
+            { n: '03', t: 'Servicii Custom', d: 'Print 3D personalizat și piese de schimb pentru imprimante 3D.' },
             { n: '04', t: 'Suport Tehnic', d: 'Echipă dedicată pentru consultanță și suport complet.' },
           ].map(f => (
             <div key={f.n} className="feature-card">
@@ -115,6 +117,7 @@ export default function HomePage() {
             { href: '/filamente', icon: SPOOL_SVG, t: 'Filamente 3D', d: 'Peste 150 de variante de filamente premium. Partener oficial Depozitfilament.ro.' },
             { href: '/componente', icon: CHIP_SVG, t: 'Componente Electronice', d: 'Componente de calitate compatibile cu Arduino, Raspberry Pi și altele.' },
             { href: '/print3d', icon: PRINT_SVG, t: 'Print 3D Custom', d: 'Printare la comandă în 24-48h. Trimite fișierul tău și primești ofertă personalizată.' },
+            { href: '/accesorii', icon: GEAR_SVG, t: 'Piese Imprimante 3D', d: 'Duze, hotend-uri, curele, rulmenți și alte piese de schimb pentru imprimante 3D.' },
           ].map(c => (
             <Link key={c.href} href={c.href} className="category-card">
               <div className="category-icon">{c.icon}</div>

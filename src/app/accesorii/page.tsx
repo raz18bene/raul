@@ -6,7 +6,7 @@ export default function AccesoriiPage() {
   return (
     <ProductsPage
       categorySlug="accesorii"
-      title="Accesorii Imprimante 3D"
+      title="Piese Imprimante 3D"
       subtitle="Piese de schimb și consumabile pentru imprimante 3D."
     />
   )
