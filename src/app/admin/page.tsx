@@ -65,8 +65,6 @@ const ADMIN_FAQS: FaqItem[] = [
   { cat: '🏷️ Filtre', q: 'Cum adaug un filtru nou la mai multe produse deodată?', a: 'Tab „Filtre" → secțiunea „➕ Creează filtru nou". Scrii numele filtrului (ex: Culoare) și o valoare implicită (ex: Alb) — se adaugă la toate produsele care nu îl au încă. Apoi corectezi excepțiile individual.' },
   { cat: '🏷️ Filtre', q: 'Cum schimb filtrul doar la UN produs?', a: 'Tab „Filtre" → secțiunea „🎯 Atribuie filtru la un produs specific". Alegi produsul, apoi scrii filtrul și valoarea corectă pentru el.' },
   { cat: '🏷️ Filtre', q: 'Pot adăuga filtre direct din formularul de produs?', a: 'Da — la editarea unui produs, secțiunea „Atribute / Filtre produs" îți permite să adaugi rânduri Filtru → Valoare direct acolo, fără să mai intri în tab-ul Filtre.' },
-  { cat: '🏷️ Filtre', q: 'Cum pun 2 culori (sau 2 valori) la același produs?', a: 'La editarea produsului, la rândul filtrului (ex. „Culoare"), scrii o valoare (ex. „Bej") și apeși Enter — apare ca etichetă. Apoi scrii următoarea valoare (ex. „Auriu") și apeși Enter din nou. Produsul va apărea la client la ambele filtre.' },
-  { cat: '🏷️ Filtre', q: 'De ce văd filtrele grupate pe categorii în loc de o listă unică?', a: 'Fiecare categorie (Filamente, Componente, Piese Imprimante) își are propriile filtre — nu are sens ca „Culoare" să apară la componente electronice. Le vezi grupate ca să nu se mai amestece. Poți lega un filtru și la altă categorie din butonul „+ leagă un filtru existent" de sub fiecare grup.' },
   { cat: '🏷️ Filtre', q: 'Cum șterg un filtru?', a: 'Tab „Filtre" → în „Filtre existente": butonul „🗑️ Șterge filtrul" elimină tot filtrul (ex: toată „Culoarea") de la toate produsele. Butonul ✕ de lângă o singură valoare (ex: „Roșu") o șterge doar pe aceea.' },
   // Comenzi
   { cat: '🛒 Comenzi', q: 'Cum văd detaliile unei comenzi?', a: 'Tab „Comenzi" → click oriunde pe cardul comenzii. Se deschide fereastra cu client, adresă, produse comandate și total.' },
@@ -275,14 +273,13 @@ function AttrRowEditor({ row, suggestions, onKeyChange, onAddValue, onRemoveValu
         value={row.key}
         onChange={e => onKeyChange(e.target.value)}
         placeholder="ex: Culoare"
-        title="Numele filtrului (ex: Culoare, Material). Scrie unul nou sau alege din sugestii."
         list="pm-attr-keys"
       />
       <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
         {row.values.map(v => (
           <span key={v} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.55rem', background: 'var(--bg-hover)', borderRadius: 20, fontSize: '0.8rem', color: 'var(--primary)' }}>
             {v}
-            <button type="button" onClick={() => onRemoveValue(v)} title={`Scoate valoarea "${v}"`} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.72rem', padding: 0, lineHeight: 1 }}>✕</button>
+            <button type="button" onClick={() => onRemoveValue(v)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.72rem', padding: 0, lineHeight: 1 }}>✕</button>
           </span>
         ))}
         <input
@@ -294,7 +291,6 @@ function AttrRowEditor({ row, suggestions, onKeyChange, onAddValue, onRemoveValu
           }}
           onBlur={commit}
           placeholder={row.values.length ? '+ altă valoare...' : 'ex: Alb (Enter pt. a adăuga)'}
-          title="Scrie o valoare și apasă Enter ca s-o adaugi — poți adăuga mai multe valori la același filtru (ex: Bej și Auriu la Culoare)."
           list={listId}
         />
         {suggestions.length > 0 && (
@@ -477,11 +473,8 @@ function ProductModal({ product, categories, existingAttrs, onSave, onClose, sb 
               Fiecare rând = un filtru (ex: <em>Culoare</em>) și una sau mai multe valori pentru acest produs (ex: <em>Roșu</em>, <em>Albastru</em>). Scrie o valoare și apasă Enter ca s-o adaugi.
             </p>
             {currentCategoryFilterKeys.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', margin: '0 0 0.6rem', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center' }}>
-                  Filtre pentru această categorie:
-                  <Help text="Astea sunt filtrele definite pentru categoria aleasă mai sus (le vezi și le administrezi din tab-ul Filtre). Apasă pe unul ca să-l adaugi rapid la acest produs, apoi completezi valoarea/valorile mai jos." />
-                </span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', margin: '0 0 0.6rem' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', alignSelf: 'center' }}>Filtre pentru această categorie:</span>
                 {currentCategoryFilterKeys.map(k => {
                   const already = attrRows.some(r => r.key === k)
                   return (
@@ -490,7 +483,6 @@ function ProductModal({ product, categories, existingAttrs, onSave, onClose, sb 
                       type="button"
                       onClick={() => quickAddCategoryKey(k)}
                       disabled={already}
-                      title={already ? `"${k}" e deja adăugat la acest produs mai jos` : `Adaugă rândul "${k}" ca să-i setezi valoarea/valorile pentru acest produs`}
                       style={{
                         padding: '0.2rem 0.6rem', borderRadius: 20, fontSize: '0.78rem', cursor: already ? 'default' : 'pointer',
                         background: already ? 'rgba(72,187,120,0.1)' : 'var(--bg-hover)',
@@ -603,7 +595,9 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
       alert(`✅ AWB generat: ${d.awbNumber}`)
       onUpdate()
     } else {
-      alert('❌ ' + JSON.stringify(d.details || d.error))
+      // d.error e acum un mesaj deja tradus in romana, cu exact ce camp e gresit
+      // (vezi extractSamedayErrors in /api/sameday) — il afisam direct, fara JSON brut.
+      alert('❌ ' + (d.error || 'Eroare necunoscută la generarea AWB.'))
     }
     setAwbLoading(false)
   }
@@ -1273,7 +1267,6 @@ function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb
                     <select
                       style={{ ...inputSty, flex: 'none', width: 'auto', fontSize: '0.8rem', padding: '0.35rem 0.6rem' }}
                       value=""
-                      title="Un filtru care există deja la altă categorie (ex: Culoare) poate fi valabil și aici, fără să-l recreezi."
                       onChange={e => { if (e.target.value) addExistingKeyToCategory(cat.id, e.target.value) }}
                     >
                       <option value="">+ leagă un filtru existent de această categorie...</option>
@@ -1286,9 +1279,8 @@ function FiltrePage({ sb, products, categories, existingAttrs, onRefresh }: { sb
           })}
           {Object.keys(existingAttrsByCategory['__none__'] || {}).length > 0 && (
             <div>
-              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
                 Fără categorie
-                <Help text="Filtre folosite la produse fără categorie setată (rar) — verifică acele produse și pune-le într-o categorie, apoi filtrul va apărea grupat corect." />
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {Object.entries(existingAttrsByCategory['__none__']).map(([key, vals]) => (

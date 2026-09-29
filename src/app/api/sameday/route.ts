@@ -16,6 +16,46 @@ async function getSamedayToken() {
   return d.token as string
 }
 
+// Numele câmpurilor din payload-ul catre SameDay, traduse in ceva inteligibil,
+// ca sa nu mai trebuiasca cineva sa descifreze raspunsul lor JSON imbricat.
+const SAMEDAY_FIELD_LABELS: Record<string, string> = {
+  'awbRecipient.name': 'Nume destinatar',
+  'awbRecipient.phoneNumber': 'Telefon destinatar',
+  'awbRecipient.address': 'Adresă destinatar',
+  'awbRecipient.countyString': 'Județ destinatar',
+  'awbRecipient.cityString': 'Oraș destinatar',
+  'awbRecipient.postalCode': 'Cod poștal destinatar',
+  'awbRecipient.email': 'Email destinatar',
+  'pickupPoint': 'Punct de ridicare (variabila SAMEDAY_PICKUP_POINT din Vercel)',
+  'contactPerson': 'Persoană de contact (variabila SAMEDAY_CONTACT_PERSON din Vercel)',
+  'service': 'Serviciu de livrare (variabila SAMEDAY_SERVICE_ID din Vercel)',
+  'packageWeight': 'Greutate colet',
+  'packageNumber': 'Număr colete',
+  'observation': 'Observație',
+}
+
+// SameDay intoarce erorile de validare intr-un arbore de forma
+// { children: { camp: { errors: ['mesaj'] }, altCamp: { children: {...} } } }.
+// Parcurgem recursiv si scoatem doar campurile care chiar au o eroare atasata,
+// cu numele lor tradus, ca sa afisam ceva clar in loc de tot arborele gol.
+function extractSamedayErrors(node: any, path: string[] = []): string[] {
+  const out: string[] = []
+  if (!node || typeof node !== 'object') return out
+  if (Array.isArray(node.errors) && node.errors.length) {
+    const key = path.join('.')
+    const label = SAMEDAY_FIELD_LABELS[key] || key || 'Câmp necunoscut'
+    out.push(`${label}: ${node.errors.join(' ')}`)
+  }
+  if (node.children && typeof node.children === 'object') {
+    if (Array.isArray(node.children)) {
+      node.children.forEach((child: any, i: number) => out.push(...extractSamedayErrors(child, [...path, `#${i + 1}`])))
+    } else {
+      Object.entries(node.children).forEach(([k, v]) => out.push(...extractSamedayErrors(v, [...path, k])))
+    }
+  }
+  return out
+}
+
 export async function POST(req: Request) {
   let action: string, body: any
   try {
@@ -94,7 +134,15 @@ export async function POST(req: Request) {
       const rawText = await r.text()
       let d: any = null
       try { d = rawText ? JSON.parse(rawText) : null } catch { /* raspuns non-JSON de la SameDay */ }
-      if (!r.ok) return NextResponse.json({ success: false, error: 'SameDay error', details: d ?? rawText?.slice(0, 800) }, { status: 400 })
+      if (!r.ok) {
+        // Traducem eroarea SameDay intr-un mesaj clar, cu exact ce camp e gresit si de ce,
+        // in loc sa afisam arborele JSON brut care nu spune nimic la prima vedere.
+        const problems = d?.errors ? extractSamedayErrors(d.errors) : []
+        const friendlyMessage = problems.length
+          ? `SameDay a respins comanda de livrare din cauza acestor câmpuri:\n• ${problems.join('\n• ')}`
+          : (d?.message || `SameDay a respins cererea (${r.status}), fără detalii suplimentare.`)
+        return NextResponse.json({ success: false, error: friendlyMessage, details: d ?? rawText?.slice(0, 800) }, { status: 400 })
+      }
       return NextResponse.json({ success: true, awbNumber: d?.awbNumber })
     } catch (e: any) {
       console.error('Eroare SameDay create-awb:', e)
