@@ -118,5 +118,36 @@ export async function GET(req: Request) {
     }
   }
 
+  // Endpoint de diagnostic: arata ID-urile reale de "pickupPoint" si "contactPerson"
+  // direct din contul tau SameDay — astea NU apar nicaieri in panoul web, doar prin API.
+  // Deschide in browser: https://<domeniul-tau>/api/sameday?action=pickup-points
+  if (action === 'pickup-points') {
+    try {
+      const token = await getSamedayToken()
+      const r = await fetch('https://api.sameday.ro/api/client/pickup-points', {
+        headers: { 'X-AUTH-TOKEN': token },
+      })
+      const rawText = await r.text()
+      let d: any = null
+      try { d = rawText ? JSON.parse(rawText) : null } catch { /* raspuns non-JSON */ }
+      if (!r.ok) return NextResponse.json({ ok: false, error: 'SameDay a refuzat cererea', details: d ?? rawText?.slice(0, 800) }, { status: 400 })
+
+      // Extragem doar ce ne intereseaza, ca sa fie usor de citit
+      const points = (d?.data || d?.pickupPoints || d || []).map?.((p: any) => ({
+        pickupPointId: p.id,
+        pickupPointAddress: `${p.address?.county?.name || p.county || ''}, ${p.address?.city?.name || p.city || ''}, ${p.address?.street || ''}`,
+        contactPersons: (p.contactPersons || p.contacts || []).map?.((c: any) => ({
+          contactPersonId: c.id,
+          name: c.name || c.person || '',
+          isDefault: c.default ?? c.isDefault ?? null,
+        })) ?? [],
+      })) ?? []
+
+      return NextResponse.json({ ok: true, points, raw: d })
+    } catch (e: any) {
+      return NextResponse.json({ ok: false, error: e.message })
+    }
+  }
+
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
 }
