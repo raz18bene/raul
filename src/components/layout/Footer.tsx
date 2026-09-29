@@ -41,7 +41,7 @@ export default function Footer() {
       </div>
       <div className="footer-bottom">
         <p>© {new Date().getFullYear()} TechNest Prototyping SRL. Toate drepturile rezervate.</p>
-        <p>Plăți securizate prin Netopia</p>
+        <p>Plăți securizate prin Stripe</p>
       </div>
     </footer>
   )

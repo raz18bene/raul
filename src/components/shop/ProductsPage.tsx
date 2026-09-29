@@ -48,9 +48,10 @@ export default function ProductsPage({ categorySlug, title, subtitle }: Props) {
     const map: Record<string, Set<string>> = {}
     products.forEach(p => {
       if (!p.attributes) return
-      Object.entries(p.attributes as Record<string, string>).forEach(([k, v]) => {
+      Object.entries(p.attributes as Record<string, string | string[]>).forEach(([k, v]) => {
         if (!map[k]) map[k] = new Set()
-        map[k].add(v)
+        const vals = Array.isArray(v) ? v : [v]
+        vals.forEach(val => { if (val) map[k].add(String(val)) })
       })
     })
     // Convert to sorted arrays, only keys with >1 unique value
@@ -76,8 +77,10 @@ export default function ProductsPage({ categorySlug, title, subtitle }: Props) {
     Object.entries(attrFilters).forEach(([key, val]) => {
       if (!val) return
       result = result.filter(p => {
-        const attrs = p.attributes as Record<string, string> | null
-        return attrs && attrs[key] === val
+        const attrs = p.attributes as Record<string, string | string[]> | null
+        if (!attrs || !attrs[key]) return false
+        const productVals = Array.isArray(attrs[key]) ? attrs[key] as string[] : [attrs[key] as unknown as string]
+        return productVals.includes(val)
       })
     })
 

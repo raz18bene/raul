@@ -5,6 +5,9 @@ export interface Category {
   description?: string
   image_url?: string
   created_at: string
+  // Lista de filtre (chei de atribute) predefinite pentru aceasta categorie,
+  // ex: ['Culoare','Material','Producator'] pentru Filamente 3D.
+  filter_keys?: string[]
 }
 
 export interface Product {
@@ -20,7 +23,8 @@ export interface Product {
   images: string[]
   is_active: boolean
   featured: boolean
-  attributes?: Record<string, string>
+  // Fiecare cheie poate avea una sau mai multe valori (ex: Culoare: ["Roșu","Albastru"])
+  attributes?: Record<string, string[]>
   recommended_ids?: string[]
   created_at: string
   categories?: Category

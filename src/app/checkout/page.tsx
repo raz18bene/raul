@@ -1,15 +1,20 @@
 'use client'
 
 export const dynamic = 'force-dynamic'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
 
 type Shipping = 'sameday' | 'sediu'
 type Payment = 'card' | 'transfer' | 'ramburs'
 
+// Cheia sub care tinem datele de livrare ale clientului in browser-ul lui,
+// ca sa nu le mai reintroduca de fiecare data cand revine sa cumpere ceva.
+// Nu e un cont — e doar o "amintire" locala, in browser-ul respectiv.
+const SAVED_INFO_KEY = 'tn_checkout_info'
+
 export default function CheckoutPage() {
-  const { cart, total, clearCart, updateQty, removeFromCart } = useCart()
+  const { cart, total, clearCart } = useCart()
   const router = useRouter()
   const [shipping, setShipping] = useState<Shipping>('sameday')
   const [payment, setPayment] = useState<Payment>('card')
@@ -20,10 +25,32 @@ export default function CheckoutPage() {
     notes: '',
   })
 
+  // La prima incarcare, preumple formularul cu datele salvate dintr-o comanda anterioara
+  // (daca exista), ca sa nu le mai bata din nou clientul care revine.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SAVED_INFO_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        setForm(f => ({ ...f, ...parsed, notes: '' }))
+      }
+    } catch { /* ignoram — nu e critic daca nu merge in acest browser */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const shippingCost = shipping === 'sediu' ? 0 : 20
   const orderTotal = total + shippingCost
 
   function setField(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
+
+  // Parseaza raspunsul ca JSON fara sa arunce eroare daca serverul a raspuns
+  // gol/nevalid (ex. problema de retea la Stripe) — ca sa nu mai apara mesajul
+  // criptic "Unexpected end of JSON input" catre client.
+  async function safeJson(res: Response): Promise<any> {
+    const text = await res.text()
+    if (!text) return {}
+    try { return JSON.parse(text) } catch { return {} }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -50,32 +77,28 @@ export default function CheckoutPage() {
           items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, sku: i.sku })),
         }),
       })
-      const data = await res.json()
+      const data = await safeJson(res)
+      if (!res.ok || !data.success) throw new Error(data.error || 'Comanda nu a putut fi înregistrată. Te rugăm să reîncerci.')
 
-      if (res.status === 409 && data.error === 'insufficient_stock') {
-        // Stocul s-a schimbat intre timp (produsul a stat "uitat" in cos si intre timp
-        // s-a vandut) — actualizam cosul cu stocul real si il lasam pe client sa retrimita.
-        const lines = (data.insufficient || [])
-          .map((i: any) => `• ${i.name}: ai ${i.requested} în coș, dar mai sunt disponibile doar ${i.available}`)
-          .join('\n')
-        for (const i of data.insufficient || []) {
-          if (i.available > 0) updateQty(i.id, i.available)
-          else removeFromCart(i.id)
-        }
-        alert(`Din păcate stocul s-a schimbat între timp pentru unele produse din coș:\n\n${lines}\n\nAm actualizat coșul — te rugăm verifică și trimite comanda din nou.`)
-        setLoading(false)
-        return
-      }
+      // Comanda a reusit — salveaza datele de livrare in acest browser, ca data viitoare
+      // cand clientul revine sa cumpere ceva, formularul sa fie deja preumplut.
+      try {
+        localStorage.setItem(SAVED_INFO_KEY, JSON.stringify({
+          name: form.name, email: form.email, phone: form.phone,
+          address: form.address, city: form.city, county: form.county, postalCode: form.postalCode,
+        }))
+      } catch { /* ignoram — nu e critic */ }
 
-      if (!data.success) throw new Error(data.error || 'Eroare')
-
+      // Comanda a fost creata cu succes in acest punct — orice eroare de mai jos
+      // (ex. la inițierea plății cu cardul) nu mai anulează comanda, doar plata cu cardul.
       if (payment === 'card') {
-        const pRes = await fetch('/api/netopia', {
+        const pRes = await fetch('/api/stripe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             orderNumber: data.orderNumber,
             total: orderTotal,
+            shippingCost,
             customerName: form.name,
             customerEmail: form.email,
             customerPhone: form.phone,
@@ -86,12 +109,19 @@ export default function CheckoutPage() {
             items: cart.map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
           }),
         })
-        const pData = await pRes.json()
-        if (pData.paymentUrl) {
+        const pData = await safeJson(pRes)
+        if (pData.url) {
           clearCart()
-          window.location.href = pData.paymentUrl
+          window.location.href = pData.url
           return
         }
+        // Nu am primit link de plată — comanda există deja (vezi mai sus), dar clientul
+        // trebuie anunțat clar că plata cu cardul nu a pornit, ca sa aleaga alta metoda
+        // sau sa ne contacteze, in loc sa vada o eroare tehnica fara sens.
+        clearCart()
+        alert('Comanda a fost înregistrată, dar plata online cu cardul nu a putut fi inițiată chiar acum. Te vom contacta pentru a stabili o altă metodă de plată, sau ne poți contacta tu direct.')
+        router.push(`/payment-return?order=${data.orderNumber}&method=${payment}`)
+        return
       }
 
       clearCart()
@@ -217,7 +247,7 @@ export default function CheckoutPage() {
               <h2 className="card-title">3. Metodă de Plată</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {[
-                  { value: 'card' as Payment, icon: '💳', label: 'Card Online', sub: 'Securizat Netopia (Visa/Mastercard)', disabled: shipping === 'sediu' },
+                  { value: 'card' as Payment, icon: '💳', label: 'Card Online', sub: 'Securizat prin Stripe (Visa/Mastercard)', disabled: shipping === 'sediu' },
                   { value: 'transfer' as Payment, icon: '🏦', label: 'Transfer Bancar', sub: 'Detalii pe email după plasare', disabled: false },
                   { value: 'ramburs' as Payment, icon: '💵', label: shipping === 'sediu' ? 'Numerar / POS la sediu' : 'Ramburs (Numerar/POS)', sub: shipping === 'sediu' ? 'Plătești la ridicare' : 'La livrare prin curier', disabled: false },
                 ].filter(o => !o.disabled).map(opt => (

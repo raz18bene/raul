@@ -4,44 +4,24 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
 export async function POST(req: Request) {
-  const body = await req.json()
+  try {
+    return await handleCreateOrder(req)
+  } catch (e: any) {
+    // Plasa de siguranta: orice eroare neasteptata tot trebuie sa iasa ca JSON valid,
+    // altfel checkout-ul crapa la res.json() cu "Unexpected end of JSON input".
+    console.error('Eroare neasteptata in POST /api/orders:', e)
+    return NextResponse.json({ success: false, error: 'A apărut o eroare neașteptată la înregistrarea comenzii. Te rugăm să reîncerci.' }, { status: 500 })
+  }
+}
+
+async function handleCreateOrder(req: Request) {
+  let body: any
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ success: false, error: 'Date de comandă invalide.' }, { status: 400 })
+  }
   const supabase = createServiceClient()
-
-  const cartItems: any[] = body.items || []
-
-  // ── Rezervă stocul ATOMIC pentru fiecare produs din coș, ÎNAINTE de a crea comanda.
-  // Fiecare apel decrementează stocul doar dacă e suficient (verificat direct în baza
-  // de date, nu în JS), deci doi clienți nu pot cumpăra amândoi ultima bucată rămasă.
-  const reserved: { id: string; qty: number }[] = []
-  const insufficient: { id: string; name: string; requested: number; available: number }[] = []
-
-  for (const item of cartItems) {
-    const qty = Number(item.quantity) || 0
-    if (qty <= 0) continue
-    const { data: rows, error: decError } = await supabase.rpc('decrement_product_stock', {
-      p_id: item.id,
-      p_qty: qty,
-    })
-    if (decError || !rows || rows.length === 0) {
-      // Stoc insuficient (sau produs inexistent) — aflam stocul real ca sa il aratam clientului.
-      const { data: p } = await supabase.from('products').select('stock').eq('id', item.id).single()
-      insufficient.push({ id: item.id, name: item.name, requested: qty, available: p?.stock ?? 0 })
-    } else {
-      reserved.push({ id: item.id, qty })
-    }
-  }
-
-  if (insufficient.length > 0) {
-    // Rollback: readaugam stocul deja rezervat pentru celelalte produse din acest cos,
-    // ca sa nu ramana "blocat" stoc pentru o comanda care nu se va mai plasa.
-    for (const r of reserved) {
-      await supabase.rpc('increment_product_stock', { p_id: r.id, p_qty: r.qty })
-    }
-    return NextResponse.json(
-      { error: 'insufficient_stock', message: 'Unele produse nu mai au stoc suficient.', insufficient },
-      { status: 409 }
-    )
-  }
 
   const orderNumber = 'ORD-' + Date.now()
 
@@ -65,13 +45,7 @@ export async function POST(req: Request) {
     notes: body.notes,
   }).select().single()
 
-  if (error || !order) {
-    // Comanda nu s-a putut crea — readaugam stocul deja rezervat, ca sa nu se piarda.
-    for (const r of reserved) {
-      await supabase.rpc('increment_product_stock', { p_id: r.id, p_qty: r.qty })
-    }
-    return NextResponse.json({ error: 'Order creation failed', details: error }, { status: 500 })
-  }
+  if (error || !order) return NextResponse.json({ success: false, error: 'Order creation failed', details: error }, { status: 500 })
 
   // Insert order items
   const items = (body.items || []).map((i: any) => ({

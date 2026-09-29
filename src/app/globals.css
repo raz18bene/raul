@@ -286,12 +286,15 @@ body::before {
   gap: 1.25rem;
 }
 .grid-item {
+  display: block;
   background: var(--bg-card);
   backdrop-filter: var(--blur-sm);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 1.75rem;
   transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+  text-decoration: none;
+  color: inherit;
 }
 .grid-item:hover {
   transform: translateY(-4px);

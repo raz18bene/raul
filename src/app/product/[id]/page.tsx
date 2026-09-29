@@ -78,7 +78,7 @@ export default function ProductPage() {
               <table className="specs-table">
                 <tbody>
                   {Object.entries(product.attributes).map(([k, v]) => (
-                    <tr key={k}><td>{k}</td><td>{v}</td></tr>
+                    <tr key={k}><td>{k}</td><td>{Array.isArray(v) ? v.join(', ') : v}</td></tr>
                   ))}
                 </tbody>
               </table>
