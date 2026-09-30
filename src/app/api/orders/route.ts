@@ -23,10 +23,23 @@ async function handleCreateOrder(req: Request) {
   }
   const supabase = createServiceClient()
 
+  // Daca clientul e autentificat, a trimis un accessToken — il verificam noi insine pe server
+  // (nu avem incredere intr-un userId trimis simplu din browser, oricine ar putea pretinde
+  // ca e altcineva). Daca token-ul lipseste sau nu e valid, comanda continua ca "guest",
+  // exact ca inainte — nu blocam checkout-ul din cauza asta.
+  let userId: string | null = null
+  if (body.accessToken) {
+    try {
+      const { data: userData, error: userErr } = await supabase.auth.getUser(body.accessToken)
+      if (!userErr && userData?.user) userId = userData.user.id
+    } catch (e) { console.warn('Nu am putut verifica accessToken-ul (comanda continuă ca guest):', e) }
+  }
+
   const orderNumber = 'ORD-' + Date.now()
 
   const { data: order, error } = await supabase.from('orders').insert({
     order_number: orderNumber,
+    user_id: userId,
     customer_name: body.customerName,
     customer_email: body.customerEmail,
     customer_phone: body.customerPhone,
@@ -46,6 +59,23 @@ async function handleCreateOrder(req: Request) {
   }).select().single()
 
   if (error || !order) return NextResponse.json({ success: false, error: 'Order creation failed', details: error }, { status: 500 })
+
+  // Daca era autentificat, ii actualizam si profilul salvat cu datele de livrare
+  // folosite acum, ca sa fie gata preumplute si data viitoare (best-effort, nu blocam comanda).
+  if (userId) {
+    try {
+      await supabase.from('profiles').upsert({
+        id: userId,
+        full_name: body.customerName,
+        phone: body.customerPhone,
+        address: body.address,
+        city: body.city,
+        county: body.county,
+        postal_code: body.postalCode,
+        updated_at: new Date().toISOString(),
+      })
+    } catch (e) { console.warn('Actualizare profil eșuată (non-fatal):', e) }
+  }
 
   // Insert order items
   const items = (body.items || []).map((i: any) => ({

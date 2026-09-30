@@ -51,8 +51,11 @@ export default function Navbar() {
             <Link href="/checkout" className="cart-btn">
               🛒 Coș <span className="cart-count">{count}</span>
             </Link>
-            <Link href="/admin" className="admin-btn" title="Admin Panel">
+            <Link href="/cont" className="admin-btn" title="Contul meu">
               👤
+            </Link>
+            <Link href="/admin" className="admin-btn" title="Admin Panel">
+              🛠️
             </Link>
           </div>
 
@@ -104,6 +107,17 @@ export default function Navbar() {
             </Link>
           ))}
           <Link
+            href="/cont"
+            onClick={() => setMenuOpen(false)}
+            style={{
+              fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 600,
+              color: 'var(--text-secondary)', textDecoration: 'none', padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-subtle)',
+            }}
+          >
+            👤 Contul meu
+          </Link>
+          <Link
             href="/admin"
             onClick={() => setMenuOpen(false)}
             style={{
@@ -112,7 +126,7 @@ export default function Navbar() {
               borderBottom: '1px solid var(--border-subtle)',
             }}
           >
-            👤 Admin Panel
+            🛠️ Admin Panel
           </Link>
         </div>
       )}

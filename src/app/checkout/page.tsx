@@ -4,6 +4,8 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
+import { getSupabase } from '@/lib/supabase'
+import Link from 'next/link'
 
 type Shipping = 'sameday' | 'sediu'
 type Payment = 'card' | 'transfer' | 'ramburs'
@@ -24,9 +26,13 @@ export default function CheckoutPage() {
     address: '', city: '', county: '', postalCode: '',
     notes: '',
   })
+  // Daca clientul e autentificat, comanda i se leaga de cont si preumplem din
+  // profilul lui salvat in Supabase (nu doar din acest browser, ca la localStorage).
+  const [account, setAccount] = useState<{ user: any; accessToken: string } | null>(null)
 
   // La prima incarcare, preumple formularul cu datele salvate dintr-o comanda anterioara
-  // (daca exista), ca sa nu le mai bata din nou clientul care revine.
+  // (daca exista in acest browser), ca sa nu le mai bata din nou clientul care revine —
+  // apoi, daca e si autentificat, datele din contul lui au prioritate (sunt mai sigure).
   useEffect(() => {
     try {
       const saved = localStorage.getItem(SAVED_INFO_KEY)
@@ -35,6 +41,24 @@ export default function CheckoutPage() {
         setForm(f => ({ ...f, ...parsed, notes: '' }))
       }
     } catch { /* ignoram — nu e critic daca nu merge in acest browser */ }
+
+    const sb = getSupabase()
+    sb.auth.getSession().then(async ({ data }: any) => {
+      const session = data.session
+      if (!session?.user) return
+      setAccount({ user: session.user, accessToken: session.access_token })
+      const { data: prof } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle()
+      setForm(f => ({
+        ...f,
+        name: prof?.full_name || f.name,
+        email: session.user.email || f.email,
+        phone: prof?.phone || f.phone,
+        address: prof?.address || f.address,
+        city: prof?.city || f.city,
+        county: prof?.county || f.county,
+        postalCode: prof?.postal_code || f.postalCode,
+      }))
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -75,6 +99,10 @@ export default function CheckoutPage() {
           shippingCost,
           paymentMethod: payment,
           items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, sku: i.sku })),
+          // Trimitem token-ul de sesiune doar daca userul e autentificat — serverul il verifica
+          // el insusi (nu are incredere intr-un userId trimis simplu din browser) si leaga
+          // comanda de contul real al userului, plus ii actualizeaza profilul salvat.
+          accessToken: account?.accessToken || null,
         }),
       })
       const data = await safeJson(res)
@@ -152,6 +180,16 @@ export default function CheckoutPage() {
       <form onSubmit={handleSubmit}>
         <div className="checkout-layout">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+            {account ? (
+              <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                👤 Comanda va fi legată de contul <strong style={{ color: 'var(--text-primary)' }}>{account.user.email}</strong> — o vei regăsi la <Link href="/cont" style={{ color: 'var(--primary)' }}>Contul meu</Link>.
+              </div>
+            ) : (
+              <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                Comanzi ca vizitator, fără cont. Ai deja un <Link href="/cont" style={{ color: 'var(--primary)' }}>cont</Link>? Autentifică-te înainte de a plasa comanda, ca să-ți fie salvată acolo.
+              </div>
+            )}
 
             {/* Date personale */}
             <div className="card">
