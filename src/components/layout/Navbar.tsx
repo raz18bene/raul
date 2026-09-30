@@ -54,9 +54,6 @@ export default function Navbar() {
             <Link href="/cont" className="admin-btn" title="Contul meu">
               👤
             </Link>
-            <Link href="/admin" className="admin-btn" title="Admin Panel">
-              🛠️
-            </Link>
           </div>
 
           {/* Mobile: theme + cart + hamburger */}
@@ -116,17 +113,6 @@ export default function Navbar() {
             }}
           >
             👤 Contul meu
-          </Link>
-          <Link
-            href="/admin"
-            onClick={() => setMenuOpen(false)}
-            style={{
-              fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 600,
-              color: 'var(--text-secondary)', textDecoration: 'none', padding: '0.9rem 0',
-              borderBottom: '1px solid var(--border-subtle)',
-            }}
-          >
-            🛠️ Admin Panel
           </Link>
         </div>
       )}

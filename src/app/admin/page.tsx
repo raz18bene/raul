@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState, useRef, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Product, Order } from '@/types'
 
@@ -710,10 +711,12 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
 // ─── Main Admin Page ──────────────────────────────────────────────
 export default function AdminPage() {
   const sb = useSupabase()
+  const router = useRouter()
   const [authed, setAuthed] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loginErr, setLoginErr] = useState('')
+  // Nu mai exista formular de login separat pe /admin — daca nu esti deja autentificat
+  // ca admin, pagina te trimite la /cont (aceeasi autentificare ca un client normal).
+  // Asta inseamna o singura "usa" de logare in tot site-ul, nu doua.
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const [tab, setTab] = useState<'products' | 'orders' | 'contact' | 'filtre'>('products')
   const [products, setProducts] = useState<any[]>([])
   const [orders, setOrders] = useState<any[]>([])
@@ -748,22 +751,20 @@ export default function AdminPage() {
     if (!sb) return
     sb.auth.getSession().then(({ data }: any) => {
       if (data.session) checkAdminRole(data.session.user)
+      else { setCheckingAuth(false); router.replace('/cont') }
     })
   }, [sb])
 
   async function checkAdminRole(user: any) {
     const role = user?.app_metadata?.role || user?.user_metadata?.role
-    if (role === 'admin') { setAuthed(true); loadData() }
-    else { await sb!.auth.signOut(); setLoginErr('Nu ai permisiuni de admin.') }
-  }
-
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setLoginErr('')
-    if (!sb) return
-    const { data, error } = await sb.auth.signInWithPassword({ email, password })
-    if (error) { setLoginErr(error.message); return }
-    if (data.user) checkAdminRole(data.user)
+    if (role === 'admin') { setAuthed(true); setCheckingAuth(false); loadData() }
+    else {
+      // Contul e valid, dar nu e de admin — nu ii aratam un formular de login aici,
+      // il trimitem la contul lui normal de client.
+      await sb!.auth.signOut()
+      setCheckingAuth(false)
+      router.replace('/cont')
+    }
   }
 
   async function loadData() {
@@ -812,21 +813,10 @@ export default function AdminPage() {
 
   const statusColors: Record<string, string> = { pending: '#ed8936', processing: '#00d9ff', shipped: '#48bb78', delivered: '#48bb78', cancelled: '#f56565' }
 
-  if (!authed) return (
-    <>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div className="card" style={{ width: '100%', maxWidth: 400 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', marginBottom: '1.5rem' }}>Admin Login</h1>
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div className="form-group"><label>Email</label><input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@admin.ro" /></div>
-            <div className="form-group"><label>Parolă</label><input type="password" required value={password} onChange={e => setPassword(e.target.value)} /></div>
-            {loginErr && <p style={{ color: 'var(--error)', fontSize: '0.88rem' }}>{loginErr}</p>}
-            <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center' }}>Intră în Admin</button>
-          </form>
-        </div>
-      </div>
-      <AdminGuide />
-    </>
+  if (checkingAuth || !authed) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-secondary)' }}>
+      {checkingAuth ? 'Se verifică autentificarea...' : 'Te redirecționăm către pagina de autentificare...'}
+    </div>
   )
 
   return (

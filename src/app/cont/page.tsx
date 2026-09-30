@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { getSupabase } from '@/lib/supabase'
 import type { Order, OrderItem } from '@/types'
 
@@ -24,8 +25,12 @@ type Profile = {
 
 export default function ContPage() {
   const sb = getSupabase()
+  const router = useRouter()
   const [checkingSession, setCheckingSession] = useState(true)
   const [user, setUser] = useState<any>(null)
+  // Daca contul e de admin, nu mai are sens sa vada pagina de client — il trimitem
+  // direct in panoul de admin, ca sa nu mai existe un buton separat de "Admin".
+  const [redirectingAdmin, setRedirectingAdmin] = useState(false)
 
   // Login / register form state
   const [mode, setMode] = useState<'login' | 'register'>('login')
@@ -59,6 +64,12 @@ export default function ContPage() {
   }, [])
 
   async function loadAccount(u: any) {
+    const role = u?.app_metadata?.role || u?.user_metadata?.role
+    if (role === 'admin') {
+      setRedirectingAdmin(true)
+      router.replace('/admin')
+      return
+    }
     setUser(u)
     setLoadingOrders(true)
     const [{ data: prof }, { data: ords }] = await Promise.all([
@@ -127,8 +138,10 @@ export default function ContPage() {
   }
   const labelSty: React.CSSProperties = { display: 'block', marginBottom: '0.35rem', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }
 
-  if (checkingSession) {
-    return <div style={{ minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>Se încarcă...</div>
+  if (checkingSession || redirectingAdmin) {
+    return <div style={{ minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+      {redirectingAdmin ? 'Cont de admin — te redirecționăm în panoul de administrare...' : 'Se încarcă...'}
+    </div>
   }
 
   // ── Neautentificat: login / inregistrare ──
