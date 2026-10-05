@@ -1,150 +1,111 @@
-'use client'
+import { cache } from 'react'
+import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
+import { createClient } from '@supabase/supabase-js'
+import type { Product } from '@/types'
+import { SITE_URL, SITE_NAME } from '@/lib/site'
+import ProductClient from './ProductClient'
 
+// Pagina de produs randata pe server: Google primeste direct titlul, descrierea, pretul si
+// datele structurate (JSON-LD) in HTML, fara sa depinda de JavaScript.
 export const dynamic = 'force-dynamic'
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { supabaseClient } from '@/lib/supabase'
-import { Product } from '@/types'
-import { useCart } from '@/hooks/useCart'
-import Link from 'next/link'
 
-export default function ProductPage() {
-  const params = useParams()
-  const router = useRouter()
-  const { addToCart } = useCart()
-  const [product, setProduct] = useState<Product | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [qty, setQty] = useState(1)
-  const [mainImg, setMainImg] = useState('')
-  const [added, setAdded] = useState(false)
-  const [recommended, setRecommended] = useState<Product[]>([])
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-  useEffect(() => {
-    if (!params.id) return
-    supabaseClient().from('products').select('*, categories(name,slug)').eq('id', params.id).single().then(({ data }) => {
-      setProduct(data)
-      setMainImg(data?.images?.[0] || '')
-      setLoading(false)
-      if (data?.recommended_ids?.length) {
-        supabaseClient().from('products').select('*').in('id', data.recommended_ids).eq('is_active', true).then(({ data: r }) => setRecommended(r || []))
-      }
-    })
-  }, [params.id])
+// cache() ca generateMetadata si pagina sa nu interogheze baza de date de doua ori.
+const getProduct = cache(async (id: string): Promise<Product | null> => {
+  if (!UUID_RE.test(id)) return null
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  const sb = createClient(url, key, { auth: { persistSession: false } })
+  const { data } = await sb.from('products').select('*, categories(name,slug)').eq('id', id).maybeSingle()
+  return (data as Product) || null
+})
 
-  if (loading) return <div className="loading-state"><div className="spinner" /></div>
-  if (!product) return <div className="empty-state"><p>Produsul nu a fost găsit.</p><Link href="/" className="btn btn-primary" style={{ marginTop: '1rem' }}>Acasă</Link></div>
+function shortText(text: string | undefined, max: number) {
+  const t = (text || '').replace(/\s+/g, ' ').trim()
+  return t.length > max ? t.slice(0, max - 1).trimEnd() + '…' : t
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const product = await getProduct(id)
+  if (!product) return { title: 'Produs negăsit', robots: { index: false, follow: false } }
 
   const price = parseFloat(String(product.sale_price ?? product.price ?? 0)) || 0
-  const inStock = product.stock > 0
-  const lowStock = product.stock > 0 && product.stock <= 10
+  const description =
+    shortText(product.description, 155) ||
+    `Cumpără ${product.name} de la ${SITE_NAME}. Preț: ${price.toFixed(2)} RON. Livrare rapidă în toată țara.`
+  const image = product.images?.[0]
+  const url = `${SITE_URL}/product/${product.id}`
 
-  function handleAdd() {
-    addToCart({ id: product!.id, name: product!.name, price, images: product!.images || [], stock: product!.stock, sku: product!.sku }, qty)
-    setAdded(true)
-    setTimeout(() => setAdded(false), 1500)
+  return {
+    title: product.name,
+    description,
+    alternates: { canonical: `/product/${product.id}` },
+    // produsele dezactivate din admin nu trebuie sa ramana in Google
+    robots: product.is_active ? undefined : { index: false, follow: false },
+    openGraph: {
+      type: 'website',
+      url,
+      title: product.name,
+      description,
+      siteName: SITE_NAME,
+      locale: 'ro_RO',
+      images: image ? [{ url: image, alt: product.name }] : undefined,
+    },
+    twitter: { card: image ? 'summary_large_image' : 'summary', title: product.name, description, images: image ? [image] : undefined },
+  }
+}
+
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const product = await getProduct(id)
+  if (!product) notFound()
+
+  const price = parseFloat(String(product.sale_price ?? product.price ?? 0)) || 0
+  const brand = (product.attributes as Record<string, string[] | string> | undefined)?.['Producator']
+  const brandName = Array.isArray(brand) ? brand[0] : brand
+
+  // Date structurate schema.org/Product: Google le foloseste pentru pret/stoc in rezultate.
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: shortText(product.description, 500) || undefined,
+    image: product.images?.length ? product.images : undefined,
+    sku: product.sku || product.id,
+    brand: brandName ? { '@type': 'Brand', name: brandName } : undefined,
+    category: product.categories?.name,
+    url: `${SITE_URL}/product/${product.id}`,
+    offers: {
+      '@type': 'Offer',
+      url: `${SITE_URL}/product/${product.id}`,
+      priceCurrency: 'RON',
+      price: price.toFixed(2),
+      itemCondition: 'https://schema.org/NewCondition',
+      availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      seller: { '@id': `${SITE_URL}/#organization` },
+    },
+  }
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Acasă', item: SITE_URL },
+      ...(product.categories?.slug
+        ? [{ '@type': 'ListItem', position: 2, name: product.categories.name, item: `${SITE_URL}/${product.categories.slug === 'filamente-3d' ? 'filamente' : product.categories.slug === 'componente-electronice' ? 'componente' : product.categories.slug === 'print-3d' ? 'print3d' : product.categories.slug}` }]
+        : []),
+      { '@type': 'ListItem', position: product.categories?.slug ? 3 : 2, name: product.name },
+    ],
   }
 
   return (
     <>
-      <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: '0.9rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-        ← Înapoi
-      </button>
-
-      <div className="product-page-layout">
-        <div className="product-gallery">
-          {mainImg ? (
-            <img className="main-product-img" src={mainImg} alt={product.name} />
-          ) : (
-            <div className="main-product-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem', opacity: 0.3 }}>📦</div>
-          )}
-          {product.images && product.images.length > 1 && (
-            <div className="thumb-row">
-              {product.images.map((src, i) => (
-                <img key={i} src={src} className={`thumb ${mainImg === src ? 'active' : ''}`} alt="" onClick={() => setMainImg(src)} />
-              ))}
-            </div>
-          )}
-
-          {product.description && (
-            <div style={{ marginTop: '1.5rem' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', marginBottom: '0.75rem', fontSize: '1rem', borderLeft: '3px solid var(--primary)', paddingLeft: '0.75rem' }}>Descriere</h3>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>{product.description}</p>
-            </div>
-          )}
-
-          {product.attributes && Object.keys(product.attributes).length > 0 && (
-            <div style={{ marginTop: '1.5rem' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', marginBottom: '0.75rem', fontSize: '1rem', borderLeft: '3px solid var(--primary)', paddingLeft: '0.75rem' }}>Specificații</h3>
-              <table className="specs-table">
-                <tbody>
-                  {Object.entries(product.attributes).map(([k, v]) => (
-                    <tr key={k}><td>{k}</td><td>{Array.isArray(v) ? v.join(', ') : v}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        <div>
-          <p style={{ color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.4rem', opacity: 0.8 }}>
-            {(product.categories as any)?.name}
-          </p>
-          <h1 className="product-detail-name">{product.name}</h1>
-          {product.sku && <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '1.25rem' }}>SKU: {product.sku}</p>}
-
-          <div style={{ marginBottom: '1.25rem' }}>
-            <span className="product-detail-price" style={{ display: "block", textAlign: "center" }}>{price.toFixed(2)} RON</span>
-            {product.sale_price && (
-              <span style={{ color: 'var(--text-muted)', textDecoration: 'line-through', fontSize: '1.1rem', marginLeft: '0.75rem' }}>{parseFloat(String(product.price ?? 0)).toFixed(2)} RON</span>
-            )}
-          </div>
-
-          <span className={`stock-badge ${!inStock ? 'stock-out' : lowStock ? 'stock-low' : 'stock-ok'}`} style={{ marginBottom: '1.5rem', display: 'inline-block' }}>
-            {!inStock ? 'Stoc Epuizat' : lowStock ? `Stoc Limitat: ${product.stock} buc` : `În Stoc: ${product.stock} buc`}
-          </span>
-
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem', flexWrap: 'wrap' }}>
-            <div className="qty-control">
-              <button className="qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
-              <span className="qty-display">{qty}</span>
-              <button className="qty-btn" onClick={() => setQty(q => Math.min(product!.stock, q + 1))}>+</button>
-            </div>
-            <button
-              className="btn btn-primary"
-              onClick={handleAdd}
-              disabled={!inStock}
-              style={{ flex: 1, justifyContent: 'center', minWidth: 180, background: added ? 'var(--success)' : undefined }}
-            >
-              {added ? '✓ Adăugat în Coș!' : '🛒 Adaugă în Coș'}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {recommended.length > 0 && (
-        <section style={{ marginTop: '4rem' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1.25rem', borderLeft: '3px solid var(--primary)', paddingLeft: '0.75rem' }}>
-            Produse Recomandate
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
-            {recommended.map(p => {
-              const rPrice = p.sale_price ?? p.price
-              return (
-                <Link key={p.id} href={`/product/${p.id}`} style={{ textDecoration: 'none', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden', display: 'block', transition: 'transform 0.2s, border-color 0.2s' }}
-                  onMouseOver={e => { (e.currentTarget as any).style.transform = 'translateY(-3px)'; (e.currentTarget as any).style.borderColor = 'var(--primary)' }}
-                  onMouseOut={e => { (e.currentTarget as any).style.transform = ''; (e.currentTarget as any).style.borderColor = 'var(--border)' }}>
-                  {p.images?.[0] && <img src={p.images[0]} alt={p.name} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }} />}
-                  <div style={{ padding: '0.75rem' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{p.name}</div>
-                    <div style={{ color: 'var(--primary)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>{parseFloat(String(rPrice ?? 0)).toFixed(2)} RON</div>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        </section>
-      )}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      <ProductClient productId={product.id} initialProduct={product} />
     </>
   )
 }
