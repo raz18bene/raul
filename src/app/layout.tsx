@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/hooks/useTheme'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import CookieBanner from '@/components/ui/CookieBanner'
+import WhatsAppButton from '@/components/ui/WhatsAppButton'
 
 export const metadata: Metadata = {
   title: 'TechNest — Filamente, Componente & Fabricație Digitală',
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </main>
             <Footer />
             <CookieBanner />
+            <WhatsAppButton />
           </CartProvider>
         </ThemeProvider>
       </body>
