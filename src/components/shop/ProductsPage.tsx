@@ -19,6 +19,10 @@ export default function ProductsPage({ categorySlug, title, subtitle }: Props) {
   // Dynamic attribute filters: { "Culoare": "Alb" }
   const [attrFilters, setAttrFilters] = useState<Record<string, string>>({})
 
+  // Cheia sub care tinem textul cautat, separata pe categorie — ca sa nu se amestece
+  // cautarea de la Filamente cu cea de la Componente, de exemplu.
+  const searchStorageKey = `tn_search_${categorySlug}`
+
   useEffect(() => {
     async function load() {
       setLoading(true)
@@ -41,7 +45,23 @@ export default function ProductsPage({ categorySlug, title, subtitle }: Props) {
       setLoading(false)
     }
     load()
+    // La revenirea pe pagina asta (ex. dupa "Back" de pe un produs), recitim cautarea
+    // salvata in acest tab de browser, ca sa nu se piarda.
+    try {
+      const saved = sessionStorage.getItem(searchStorageKey)
+      if (saved) setSearch(saved)
+    } catch { /* ignoram — nu e critic daca sessionStorage nu e disponibil */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categorySlug])
+
+  // Salvam cautarea pe masura ce clientul scrie, ca sa fie gata la "Back".
+  useEffect(() => {
+    try {
+      if (search) sessionStorage.setItem(searchStorageKey, search)
+      else sessionStorage.removeItem(searchStorageKey)
+    } catch { /* ignoram */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
 
   // Build available attribute keys+values from all products
   const availableAttrs = useMemo(() => {
