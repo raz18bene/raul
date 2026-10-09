@@ -947,7 +947,10 @@ export default function AdminPage() {
             const r = await fetch('/api/sameday', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'diag', accessToken: sess?.session?.access_token || '' }) })
             const d = await r.json()
             if (!d.success) { alert('❌ ' + (d.error || 'Eroare')); return }
-            alert('PUNCTE DE RIDICARE:\n' + JSON.stringify(d.pickupPoints, null, 1) + '\n\nSERVICII:\n' + JSON.stringify(d.services, null, 1))
+            const pp = (d.pickupPoints || []).map((p: any) => `${p.id} — ${p.alias || ''} (${p.address || ''})`).join('\n') || '(niciunul)'
+            const sv = (d.services || []).map((s: any) => `${s.id} — ${s.name} (cod: ${s.code})`).join('\n') || '(niciun serviciu returnat)'
+            console.log('SameDay puncte de ridicare:', d.pickupPoints, 'servicii:', d.services)
+            alert('SERVICII (id — nume):\n' + sv + '\n\nPUNCTE DE RIDICARE (id — nume):\n' + pp)
           }}>🔎 ID-uri SameDay</button>
           <button onClick={() => { sb!.auth.signOut(); setAuthed(false) }}
             title="Ieși din contul de admin"
