@@ -5,7 +5,11 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { Product, Order } from '@/types'
+import dynamicImport from 'next/dynamic'
+import { Product, Order, Locker } from '@/types'
+
+// Harta easybox — se incarca doar in browser, la cerere
+const EasyboxMap = dynamicImport(() => import('@/components/shop/EasyboxMap'), { ssr: false })
 
 function useSupabase() {
   const ref = useRef<SupabaseClient | null>(null)
@@ -552,6 +556,27 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [awbLoading, setAwbLoading] = useState(false)
+  // Easybox ales de client (sau schimbat de admin) + bifa "predam noi la un punct SameDay"
+  const [locker, setLocker] = useState<Locker | null>(order.shipping_address?.locker || null)
+  const [mapOpen, setMapOpen] = useState(false)
+  // Comenzile in easybox: implicit bifat "predare personala" (ducem noi coletul la un punct SameDay).
+  // Debifat = SameDay trimite curierul sa ridice coletul de la voi.
+  const [personalHandover, setPersonalHandover] = useState(order.shipping_method === 'easybox')
+  const [shippingMethod, setShippingMethod] = useState<string>(order.shipping_method || 'sameday')
+
+  // Admin alege / schimba easybox-ul: salvam imediat pe comanda (adresa de livrare devine adresa easybox-ului)
+  async function changeLocker(l: Locker) {
+    // Pastram adresa clientului (e nevoie la AWB si pentru contact); doar adaugam easybox-ul ales
+    const newAddr = { ...(order.shipping_address || {}), locker: l }
+    const { error } = await sb.from('orders').update({ shipping_address: newAddr, shipping_method: 'easybox' } as any).eq('id', order.id)
+    if (error) { alert('❌ Nu am putut salva easybox-ul: ' + error.message); return }
+    order.shipping_address = newAddr
+    order.shipping_method = 'easybox'
+    setLocker(l)
+    if (shippingMethod !== 'easybox') setPersonalHandover(true)
+    setShippingMethod('easybox')
+    onUpdate()
+  }
 
   async function saveChanges() {
     setSaving(true)
@@ -572,13 +597,23 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
   }
 
   async function generateAWB() {
+    if (shippingMethod === 'easybox' && !locker) {
+      alert('📦 Comanda e cu livrare prin easybox. Alege mai întâi easybox-ul cel mai apropiat de adresa clientului (butonul „Alege easybox pe hartă").')
+      setMapOpen(true)
+      return
+    }
     setAwbLoading(true)
     const addr = order.shipping_address || {}
+    // Endpoint-ul SameDay e doar pentru admin — trimitem token-ul sesiunii curente
+    const { data: sess } = await sb.auth.getSession()
     const r = await fetch('/api/sameday', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'create-awb',
+        accessToken: sess?.session?.access_token || '',
+        lockerId: shippingMethod === 'easybox' && locker ? locker.id : undefined,
+        personalHandover,
         orderNumber: order.order_number,
         recipientName: order.customer_name,
         recipientPhone: order.customer_phone,
@@ -587,7 +622,9 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
         recipientCity: addr.city || '',
         recipientCounty: addr.county || '',
         recipientPostalCode: addr.postal_code || '',
-        weight: 1, parcels: 1, cashOnDelivery: 0,
+        weight: 1, parcels: 1,
+        // Ramburs: curierul incaseaza totalul comenzii (produse + transport) de la client
+        cashOnDelivery: order.payment_method === 'ramburs' ? safe(order.total_amount) : 0,
       }),
     })
     const d = await r.json()
@@ -623,7 +660,18 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>📧 {order.customer_email}</p>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>📞 {order.customer_phone}</p>
           {addr.street && <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: '0.3rem' }}>📍 {addr.street}, {addr.city}, {addr.county} {addr.postal_code}</p>}
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>🚚 {order.shipping_method === 'sediu' ? 'Ridicare de la sediu' : 'SameDay Courier'} · 💳 {order.payment_method}</p>
+          {order.billing?.type === 'pj' ? (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: '0.3rem' }}>
+              🧾 <strong style={{ color: 'var(--text-primary)' }}>Factură persoană juridică:</strong> {order.billing.company}<br />
+              CUI: {order.billing.cui}{order.billing.vatPayer ? ' (plătitor TVA)' : ''} · Reg. Com.: {order.billing.regCom}<br />
+              {order.billing.address}, {order.billing.city}, {order.billing.county} {order.billing.postalCode}
+            </p>
+          ) : order.billing ? (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: '0.3rem' }}>
+              🧾 Factură persoană fizică: {order.billing.name}{order.billing.address ? ` — ${order.billing.address}, ${order.billing.city}, ${order.billing.county}` : ' (adresa de livrare)'}
+            </p>
+          ) : null}
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>🚚 {shippingMethod === 'sediu' ? 'Ridicare de la sediu' : shippingMethod === 'easybox' ? 'Easybox SameDay' : 'SameDay Courier'} · 💳 {order.payment_method}</p>
         </div>
 
         {/* Products */}
@@ -670,16 +718,38 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
             <span style={{ color: 'var(--success)', fontWeight: 600 }}>🏷️ AWB: {(order as any).awb_number}</span>
             <a href={`https://sameday.ro/tracking?awb=${(order as any).awb_number}`} target="_blank" style={{ color: 'var(--primary)', fontSize: '0.85rem' }}>Track →</a>
           </div>
-        ) : order.shipping_method !== 'sediu' ? (
+        ) : shippingMethod !== 'sediu' ? (
+          <>
+          <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-input)', border: `1px solid ${locker ? 'var(--primary)' : 'var(--border)'}`, borderRadius: 8, marginBottom: '0.75rem', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+            {locker ? (
+              <p style={{ marginBottom: '0.5rem' }}>📦 <strong style={{ color: 'var(--text-primary)' }}>{locker.name}</strong><br />{locker.address}, {locker.city}, {locker.county} {locker.postalCode}</p>
+            ) : (
+              <p style={{ marginBottom: '0.5rem' }}>{shippingMethod === 'easybox' ? <>⚠️ <strong style={{ color: 'var(--text-primary)' }}>Comandă pentru easybox</strong> fără punct ales. Alege easybox-ul pe hartă înainte de AWB.</> : 'Livrare la adresă. Poți trimite coletul într-un easybox în loc.'}</p>
+            )}
+            <button type="button" onClick={() => setMapOpen(true)} className="btn btn-secondary btn-sm">🗺️ {locker ? 'Schimbă easybox-ul pe hartă' : 'Alege easybox pe hartă'}</button>
+            {locker && (
+              <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginTop: '0.75rem', cursor: 'pointer' }}
+                title="Bifează dacă predai tu coletul personal la un punct SameDay (ex. easybox) în loc să vină curierul la ridicare">
+                <input type="checkbox" checked={personalHandover} onChange={e => setPersonalHandover(e.target.checked)} style={{ marginTop: 3 }} />
+                <span>Predare personală în orice punct de livrare SameDay — predăm noi coletul la un punct. Debifează dacă vrei să vină curierul să-l ridice.</span>
+              </label>
+            )}
+          </div>
           <button onClick={generateAWB} disabled={awbLoading}
             title="Creează automat eticheta de livrare SameDay pentru această comandă și trece statusul pe 'shipped'"
             style={{ width: '100%', padding: '0.75rem', background: 'var(--primary)', color: '#000', border: 'none', borderRadius: 8, fontFamily: 'var(--font-display)', fontWeight: 700, cursor: 'pointer', marginBottom: '1rem' }}>
             {awbLoading ? '⏳ Se generează...' : '🚚 Generează AWB SameDay'}
           </button>
+          </>
         ) : (
           <div style={{ padding: '0.75rem', background: 'var(--bg-input)', borderRadius: 8, marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
             🏢 Ridicare de la sediu — fără AWB
           </div>
+        )}
+
+        {mapOpen && (
+          <EasyboxMap open={mapOpen} onClose={() => setMapOpen(false)} onSelect={changeLocker} selectedId={locker?.id} large initialQuery={addr.city || ''}
+            title={`📦 Easybox pentru comanda ${order.order_number}`} />
         )}
 
         {order.notes && (
@@ -755,6 +825,25 @@ export default function AdminPage() {
     })
   }, [sb])
 
+  // Cât timp e deschis panoul de admin, ascultam in timp real comenzile noi care intra
+  // (nu trebuie dat refresh la pagina) — la fiecare comanda noua reincarcam lista, ceea
+  // ce actualizeaza automat si cerculetul cu numarul de comenzi neprocesate de pe tab.
+  useEffect(() => {
+    if (!sb || !authed) return
+    const channel = sb
+      .channel('admin-orders-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, () => {
+        loadData()
+      })
+      .subscribe()
+    return () => { sb.removeChannel(channel) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sb, authed])
+
+  // Comenzile "in asteptare" = inca nevazute/neprocesate de admin — exact cifra care
+  // trebuie sa apara in cerculetul de notificare.
+  const pendingOrdersCount = useMemo(() => orders.filter((o: any) => o.status === 'pending').length, [orders])
+
   async function checkAdminRole(user: any) {
     const role = user?.app_metadata?.role || user?.user_metadata?.role
     if (role === 'admin') { setAuthed(true); setCheckingAuth(false); loadData() }
@@ -824,7 +913,27 @@ export default function AdminPage() {
       <AdminGuide />
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', fontSize: '1.5rem' }}>Admin Panel</h1>
+        <div style={{ position: 'relative', display: 'inline-flex' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', fontSize: '1.5rem' }}>Admin Panel</h1>
+          {pendingOrdersCount > 0 && (
+            <span
+              title={`${pendingOrdersCount} comandă${pendingOrdersCount === 1 ? '' : 'nzi'} în așteptare — vezi tab-ul Comenzi`}
+              onClick={() => setTab('orders')}
+              style={{
+                position: 'absolute', top: -8, right: -14,
+                minWidth: 20, height: 20, padding: '0 5px',
+                borderRadius: 10, background: 'var(--error)', color: '#fff',
+                fontFamily: 'var(--font-display)', fontSize: '0.72rem', fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', animation: 'tn-pulse 1.6s ease-in-out infinite',
+                boxShadow: '0 0 0 2px var(--bg-page, #0a0e27)',
+              }}
+            >
+              {pendingOrdersCount > 99 ? '99+' : pendingOrdersCount}
+            </span>
+          )}
+          <style>{`@keyframes tn-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }`}</style>
+        </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <a href="/admin-tutorial" target="_blank" className="btn btn-secondary btn-sm" title="Deschide tutorialul complet, pas cu pas, cu exemple">📖 Tutorial Filtre</a>
           <button className="btn btn-secondary btn-sm" onClick={syncStock} title="Actualizează stocurile din contul Oblio pe site, ca să nu vinzi produse epuizate">🔄 Sync Oblio</button>
@@ -833,6 +942,13 @@ export default function AdminPage() {
             const [sd, od] = await Promise.all([s.json(), o.json()])
             alert(`SameDay: ${sd.ok ? '✅' : '❌ ' + sd.error}\nOblio: ${od.ok ? '✅' : '❌ ' + od.error}`)
           }}>🔧 Test Integrări</button>
+          <button className="btn btn-secondary btn-sm" title="Afișează ID-urile SameDay (servicii, puncte de ridicare) de pus în variabilele Vercel" onClick={async () => {
+            const { data: sess } = await sb!.auth.getSession()
+            const r = await fetch('/api/sameday', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'diag', accessToken: sess?.session?.access_token || '' }) })
+            const d = await r.json()
+            if (!d.success) { alert('❌ ' + (d.error || 'Eroare')); return }
+            alert('PUNCTE DE RIDICARE:\n' + JSON.stringify(d.pickupPoints, null, 1) + '\n\nSERVICII:\n' + JSON.stringify(d.services, null, 1))
+          }}>🔎 ID-uri SameDay</button>
           <button onClick={() => { sb!.auth.signOut(); setAuthed(false) }}
             title="Ieși din contul de admin"
             style={{ padding: '0.5rem 1rem', background: 'var(--error)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.85rem' }}>
@@ -859,7 +975,7 @@ export default function AdminPage() {
               background: tab === t ? 'var(--primary)' : 'var(--bg-input)',
               color: tab === t ? '#000' : 'var(--text-secondary)',
             }}>
-              {t === 'products' ? `📦 Produse (${products.length})` : t === 'orders' ? `🛒 Comenzi (${orders.length})` : t === 'contact' ? '📩 Cereri' : '🏷️ Filtre'}
+              {t === 'products' ? `📦 Produse (${products.length})` : t === 'orders' ? `🛒 Comenzi (${orders.length})${pendingOrdersCount > 0 ? ` 🔴 ${pendingOrdersCount} noi` : ''}` : t === 'contact' ? '📩 Cereri' : '🏷️ Filtre'}
             </button>
           )
         })}

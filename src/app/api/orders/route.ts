@@ -35,20 +35,60 @@ async function handleCreateOrder(req: Request) {
     } catch (e) { console.warn('Nu am putut verifica accessToken-ul (comanda continuă ca guest):', e) }
   }
 
+  // Livrare in easybox: validam ce a trimis clientul (id numeric + nume + oras) si
+  // folosim adresa easybox-ului ca adresa de livrare.
+  let locker: any = null
+  const l = body.locker
+  if (body.shippingMethod === 'easybox') {
+    if (!l || !Number.isFinite(Number(l.id)) || !l.name || !l.city) {
+      return NextResponse.json({ success: false, error: 'Alege un easybox pentru livrare.' }, { status: 400 })
+    }
+    locker = {
+      id: Number(l.id),
+      name: String(l.name).slice(0, 200),
+      address: String(l.address || '').slice(0, 300),
+      city: String(l.city).slice(0, 100),
+      county: String(l.county || '').slice(0, 100),
+      postalCode: String(l.postalCode || '').slice(0, 20),
+      lat: Number(l.lat) || undefined,
+      lng: Number(l.lng) || undefined,
+    }
+  }
+
+  // Facturare: persoana fizica sau juridica. La PJ campurile sunt obligatorii (validate si pe server).
+  const b = body.billing || {}
+  const clip = (v: any, n = 200) => String(v ?? '').trim().slice(0, n)
+  let billing: any
+  if (b.type === 'pj') {
+    billing = {
+      type: 'pj', company: clip(b.company), cui: clip(b.cui, 20).toUpperCase().replace(/\s/g, ''), regCom: clip(b.regCom, 40),
+      address: clip(b.address, 300), city: clip(b.city, 100), county: clip(b.county, 100), postalCode: clip(b.postalCode, 20), vatPayer: b.vatPayer === true,
+    }
+    if (!billing.company || !billing.regCom || !billing.address || !billing.city || !billing.county || !/^(RO)?\d{2,10}$/.test(billing.cui)) {
+      return NextResponse.json({ success: false, error: 'Date de facturare incomplete pentru persoană juridică (denumire, CUI valid, Reg. Com., adresă, oraș, județ).' }, { status: 400 })
+    }
+  } else {
+    billing = { type: 'pf', name: clip(b.name) || clip(body.customerName), sameAsDelivery: b.sameAsDelivery !== false && !locker }
+    if (!billing.sameAsDelivery) {
+      Object.assign(billing, { address: clip(b.address, 300), city: clip(b.city, 100), county: clip(b.county, 100), postalCode: clip(b.postalCode, 20) })
+    }
+    if (!billing.sameAsDelivery && (!b.address || !b.city || !b.county)) {
+      return NextResponse.json({ success: false, error: 'Completează adresa de facturare.' }, { status: 400 })
+    }
+  }
+
   const orderNumber = 'ORD-' + Date.now()
 
   const { data: order, error } = await supabase.from('orders').insert({
     order_number: orderNumber,
     user_id: userId,
+    billing,
     customer_name: body.customerName,
     customer_email: body.customerEmail,
     customer_phone: body.customerPhone,
-    shipping_address: {
-      street: body.address,
-      city: body.city,
-      county: body.county,
-      postal_code: body.postalCode,
-    },
+    shipping_address: locker
+      ? { street: locker.address, city: locker.city, county: locker.county, postal_code: locker.postalCode, locker }
+      : { street: body.address, city: body.city, county: body.county, postal_code: body.postalCode },
     total_amount: body.total,
     status: 'pending',
     payment_status: 'pending',
@@ -113,7 +153,7 @@ async function handleCreateOrder(req: Request) {
           to: [body.customerEmail, 'technest.prototyping@gmail.com'],
           reply_to: 'technest.prototyping@gmail.com',
           subject: `Comandă confirmată — ${orderNumber}`,
-          html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><div style="background:#0a0e27;padding:24px;border-radius:12px 12px 0 0;"><h1 style="color:#00d9ff;font-family:monospace;margin:0;">Tech<span style="color:#ff6b35;">Nest</span></h1></div><div style="background:#fff;padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;"><h2 style="color:#1a202c;">✅ Comanda ta a fost primită!</h2><p style="color:#4a5568;">Număr comandă: <strong style="color:#00a8cc;">${orderNumber}</strong></p><p style="color:#4a5568;">Total: <strong>${body.total} RON</strong></p><p style="color:#4a5568;">Metodă livrare: ${body.shippingMethod === 'sediu' ? 'Ridicare de la sediu' : 'SameDay Courier'}</p><p style="color:#718096;font-size:0.85rem;">Te vom contacta în curând cu detalii despre livrare.</p><hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;"/><p style="color:#a0aec0;font-size:0.78rem;">TechNest Prototyping SRL · technest.prototyping@gmail.com · 0754 545 800</p></div></div>`,
+          html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><div style="background:#0a0e27;padding:24px;border-radius:12px 12px 0 0;"><h1 style="color:#00d9ff;font-family:monospace;margin:0;">Tech<span style="color:#ff6b35;">Nest</span></h1></div><div style="background:#fff;padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;"><h2 style="color:#1a202c;">✅ Comanda ta a fost primită!</h2><p style="color:#4a5568;">Număr comandă: <strong style="color:#00a8cc;">${orderNumber}</strong></p><p style="color:#4a5568;">Total: <strong>${body.total} RON</strong></p><p style="color:#4a5568;">Metodă livrare: ${body.shippingMethod === 'sediu' ? 'Ridicare de la sediu' : locker ? 'Easybox SameDay — ' + locker.name + ', ' + locker.address + ', ' + locker.city : 'SameDay Courier'}</p><p style="color:#718096;font-size:0.85rem;">Te vom contacta în curând cu detalii despre livrare.</p><hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;"/><p style="color:#a0aec0;font-size:0.78rem;">TechNest Prototyping SRL · technest.prototyping@gmail.com · 0754 545 800</p></div></div>`,
         }),
       })
     } catch (e) { console.warn('Resend order email failed:', e) }
@@ -122,12 +162,4 @@ async function handleCreateOrder(req: Request) {
   return NextResponse.json({ success: true, orderId: order.id, orderNumber })
 }
 
-export async function GET() {
-  const supabase = createServiceClient()
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*, order_items(*)')
-    .order('created_at', { ascending: false })
-  if (error) return NextResponse.json({ error }, { status: 500 })
-  return NextResponse.json(data)
-}
+// GET eliminat intentionat: returna public TOATE comenzile (nume, telefon, adrese). Adminul le citeste direct din Supabase, cu sesiunea lui.

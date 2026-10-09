@@ -6,8 +6,13 @@ import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
 import { getSupabase } from '@/lib/supabase'
 import Link from 'next/link'
+import dynamicImport from 'next/dynamic'
+import type { Locker } from '@/types'
 
-type Shipping = 'sameday' | 'sediu'
+// Harta se incarca doar in browser, la cerere (Leaflet nu merge la server-side render)
+const EasyboxMap = dynamicImport(() => import('@/components/shop/EasyboxMap'), { ssr: false })
+
+type Shipping = 'sameday' | 'easybox' | 'sediu'
 type Payment = 'card' | 'transfer' | 'ramburs'
 
 // Cheia sub care tinem datele de livrare ale clientului in browser-ul lui,
@@ -21,6 +26,13 @@ export default function CheckoutPage() {
   const [shipping, setShipping] = useState<Shipping>('sameday')
   const [payment, setPayment] = useState<Payment>('card')
   const [loading, setLoading] = useState(false)
+  const [locker, setLocker] = useState<Locker | null>(null)
+  const [mapOpen, setMapOpen] = useState(false)
+  // Facturare: persoana fizica sau juridica (acordeon — se deschide doar cea aleasa)
+  const [billingType, setBillingType] = useState<'pf' | 'pj'>('pf')
+  const [sameAddr, setSameAddr] = useState(true)
+  const [bill, setBill] = useState({ name: '', company: '', cui: '', regCom: '', address: '', city: '', county: '', postalCode: '', vatPayer: false })
+  function setBillField(k: string, v: string | boolean) { setBill(b => ({ ...b, [k]: v })) }
   const [form, setForm] = useState({
     name: '', email: '', phone: '',
     address: '', city: '', county: '', postalCode: '',
@@ -79,6 +91,8 @@ export default function CheckoutPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!cart.length) return alert('Coșul este gol!')
+    if (shipping === 'easybox' && !locker) { setMapOpen(true); return alert('Alege un easybox de pe hartă pentru livrare.') }
+    if (billingType === 'pj' && !/^(RO)?\s?\d{2,10}$/i.test(bill.cui.trim())) return alert('CUI invalid. Exemplu: RO12345678 sau 12345678.')
     setLoading(true)
 
     try {
@@ -96,6 +110,10 @@ export default function CheckoutPage() {
           notes: form.notes,
           total: orderTotal,
           shippingMethod: shipping,
+          locker: shipping === 'easybox' ? locker : null,
+          billing: billingType === 'pj'
+            ? { type: 'pj', company: bill.company, cui: bill.cui, regCom: bill.regCom, address: bill.address, city: bill.city, county: bill.county, postalCode: bill.postalCode, vatPayer: bill.vatPayer }
+            : { type: 'pf', name: bill.name || form.name, sameAsDelivery: sameAddr && shipping !== 'easybox', address: bill.address, city: bill.city, county: bill.county, postalCode: bill.postalCode },
           shippingCost,
           paymentMethod: payment,
           items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, sku: i.sku })),
@@ -130,10 +148,10 @@ export default function CheckoutPage() {
             customerName: form.name,
             customerEmail: form.email,
             customerPhone: form.phone,
-            address: form.address,
-            city: form.city,
-            county: form.county,
-            postalCode: form.postalCode,
+            address: shipping === 'easybox' && locker ? `${locker.name} — ${locker.address}` : form.address,
+            city: shipping === 'easybox' && locker ? locker.city : form.city,
+            county: shipping === 'easybox' && locker ? locker.county : form.county,
+            postalCode: shipping === 'easybox' && locker ? (locker.postalCode || '') : form.postalCode,
             items: cart.map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
           }),
         })
@@ -218,6 +236,7 @@ export default function CheckoutPage() {
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
                 {[
                   { value: 'sameday' as Shipping, icon: '🚚', label: 'Livrare SameDay', sub: '24-48h, oriunde în țară', price: '20,00 RON' },
+                  { value: 'easybox' as Shipping, icon: '📦', label: 'Livrare în easybox', sub: 'Alegi punctul de pe hartă', price: '20,00 RON' },
                   { value: 'sediu' as Shipping, icon: '🏢', label: 'Ridicare de la sediu', sub: 'Timișoara, 3 August 1919, nr. 21', price: 'GRATUIT' },
                 ].map(opt => (
                   <label
@@ -251,6 +270,22 @@ export default function CheckoutPage() {
                 </div>
               )}
 
+              {shipping === 'easybox' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+                  {locker ? (
+                    <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-hover)', border: '1px solid var(--primary)', borderRadius: 8, fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                      📦 <strong style={{ color: 'var(--text-primary)' }}>{locker.name}</strong><br />
+                      {locker.address}, {locker.city}, {locker.county} {locker.postalCode}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>Nu ai ales încă niciun easybox.</div>
+                  )}
+                  <button type="button" className="btn btn-secondary" style={{ alignSelf: 'flex-start' }} onClick={() => setMapOpen(true)}>
+                    🗺️ {locker ? 'Schimbă easybox-ul' : 'Alege easybox pe hartă'}
+                  </button>
+                </div>
+              )}
+
               {shipping === 'sameday' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div className="form-group">
@@ -280,9 +315,89 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {/* Facturare — acordeon persoana fizica / juridica */}
+            <div className="card">
+              <h2 className="card-title">3. Facturare</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {([
+                  { v: 'pf' as const, icon: '👤', label: 'Persoană fizică' },
+                  { v: 'pj' as const, icon: '🏢', label: 'Persoană juridică (firmă)' },
+                ]).map(o => {
+                  const open = billingType === o.v
+                  return (
+                    <div key={o.v} style={{ border: `1px solid ${open ? 'var(--primary)' : 'var(--border)'}`, borderRadius: 10, overflow: 'hidden' }}>
+                      <button type="button" onClick={() => setBillingType(o.v)} aria-expanded={open}
+                        style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.85rem 1rem', background: open ? 'var(--bg-hover)' : 'var(--bg-input)', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.95rem' }}>
+                        <span>{o.icon} {o.label}</span>
+                        <span style={{ color: 'var(--primary)' }}>{open ? '▲' : '▼'}</span>
+                      </button>
+                      {open && o.v === 'pf' && (
+                        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                          <div className="form-group">
+                            <label>Nume pe factură *</label>
+                            <input required value={bill.name || form.name} onChange={e => setBillField('name', e.target.value)} placeholder="Ion Popescu" />
+                          </div>
+                          {shipping !== 'easybox' && (
+                            <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', cursor: 'pointer', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                              <input type="checkbox" checked={sameAddr} onChange={e => setSameAddr(e.target.checked)} />
+                              Adresa de facturare este aceeași cu cea de livrare
+                            </label>
+                          )}
+                          {(shipping === 'easybox' || !sameAddr) && (
+                            <>
+                              <div className="form-group">
+                                <label>Adresă facturare *</label>
+                                <input required value={bill.address} onChange={e => setBillField('address', e.target.value)} placeholder="Str. Exemplu, Nr. 10" />
+                              </div>
+                              <div className="form-row">
+                                <div className="form-group"><label>Oraș *</label><input required value={bill.city} onChange={e => setBillField('city', e.target.value)} /></div>
+                                <div className="form-group"><label>Județ *</label><input required value={bill.county} onChange={e => setBillField('county', e.target.value)} /></div>
+                                <div className="form-group"><label>Cod Poștal</label><input value={bill.postalCode} onChange={e => setBillField('postalCode', e.target.value)} /></div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      {open && o.v === 'pj' && (
+                        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                          <div className="form-group">
+                            <label>Denumire firmă *</label>
+                            <input required value={bill.company} onChange={e => setBillField('company', e.target.value)} placeholder="EXEMPLU S.R.L." />
+                          </div>
+                          <div className="form-row">
+                            <div className="form-group">
+                              <label>CUI / CIF *</label>
+                              <input required value={bill.cui} onChange={e => setBillField('cui', e.target.value)} placeholder="RO12345678" />
+                            </div>
+                            <div className="form-group">
+                              <label>Nr. Reg. Com. *</label>
+                              <input required value={bill.regCom} onChange={e => setBillField('regCom', e.target.value)} placeholder="J35/1234/2020" />
+                            </div>
+                          </div>
+                          <div className="form-group">
+                            <label>Adresă sediu social *</label>
+                            <input required value={bill.address} onChange={e => setBillField('address', e.target.value)} placeholder="Str. Exemplu, Nr. 10" />
+                          </div>
+                          <div className="form-row">
+                            <div className="form-group"><label>Oraș *</label><input required value={bill.city} onChange={e => setBillField('city', e.target.value)} /></div>
+                            <div className="form-group"><label>Județ *</label><input required value={bill.county} onChange={e => setBillField('county', e.target.value)} /></div>
+                            <div className="form-group"><label>Cod Poștal</label><input value={bill.postalCode} onChange={e => setBillField('postalCode', e.target.value)} /></div>
+                          </div>
+                          <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', cursor: 'pointer', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                            <input type="checkbox" checked={bill.vatPayer} onChange={e => setBillField('vatPayer', e.target.checked)} />
+                            Firma este plătitoare de TVA
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
             {/* Plată */}
             <div className="card">
-              <h2 className="card-title">3. Metodă de Plată</h2>
+              <h2 className="card-title">4. Metodă de Plată</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {[
                   { value: 'card' as Payment, icon: '💳', label: 'Card Online', sub: 'Securizat prin Stripe (Visa/Mastercard)', disabled: shipping === 'sediu' },
@@ -348,6 +463,15 @@ export default function CheckoutPage() {
           </div>
         </div>
       </form>
+
+      {mapOpen && (
+        <EasyboxMap
+          open={mapOpen}
+          onClose={() => setMapOpen(false)}
+          onSelect={setLocker}
+          selectedId={locker?.id}
+        />
+      )}
     </>
   )
 }

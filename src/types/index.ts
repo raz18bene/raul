@@ -30,6 +30,18 @@ export interface Product {
   categories?: Category
 }
 
+// Un easybox / punct de livrare SameDay ales de client (sau de admin) pe harta.
+export interface Locker {
+  id: number
+  name: string
+  address: string
+  city: string
+  county: string
+  postalCode?: string
+  lat?: number
+  lng?: number
+}
+
 export interface Order {
   id: string
   order_number: string
@@ -42,12 +54,27 @@ export interface Order {
     city?: string
     county?: string
     postal_code?: string
+    // Prezent doar la livrarea in easybox
+    locker?: Locker
   }
+  billing?: {
+    type: 'pf' | 'pj'
+    name?: string
+    company?: string
+    cui?: string
+    regCom?: string
+    vatPayer?: boolean
+    sameAsDelivery?: boolean
+    address?: string
+    city?: string
+    county?: string
+    postalCode?: string
+  } | null
   total_amount: number
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
   payment_status: 'pending' | 'paid' | 'failed' | 'refunded'
   payment_method: 'card' | 'transfer' | 'ramburs'
-  shipping_method?: 'sameday' | 'sediu'
+  shipping_method?: 'sameday' | 'easybox' | 'sediu'
   shipping_cost?: number
   awb_number?: string
   notes?: string

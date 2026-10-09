@@ -1120,7 +1120,8 @@ body::before {
   .page-title { font-size: 2rem; }
   .admin-layout { grid-template-columns: 1fr; }
   .admin-sidebar { height: auto; position: static; }
-  .visual-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  /* Pe mobil categoriile apar o singura data (in sectiunea de jos), nu si in hero */
+  .visual-grid { display: none; }
   .grid-item { padding: 1.25rem; }
   .products-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 }
@@ -1241,4 +1242,30 @@ label:has(input[type="file"]):hover {
 
 .product-price-row {
   margin-top: auto;
+}
+
+/* ── Harta easybox (checkout + admin) ── */
+.eb-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.eb-modal { background: var(--bg-overlay); border: 1px solid var(--border); border-radius: 14px; width: min(1100px, 100%); height: min(88vh, 760px); display: flex; flex-direction: column; overflow: hidden; }
+.eb-modal-large { width: min(1500px, 100%); height: 94vh; }
+.eb-header { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--border); color: var(--text-primary); font-family: var(--font-display); }
+.eb-close { background: none; border: none; color: var(--text-secondary); font-size: 1.3rem; cursor: pointer; }
+.eb-body { flex: 1; display: flex; min-height: 0; }
+.eb-side { width: 330px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border-right: 1px solid var(--border); min-height: 0; }
+.eb-search { width: 100%; padding: 0.65rem 0.8rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-primary); font-size: 0.92rem; }
+.eb-geo { padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-secondary); cursor: pointer; font-size: 0.85rem; }
+.eb-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.35rem; min-height: 0; }
+.eb-item { text-align: left; padding: 0.55rem 0.7rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-secondary); cursor: pointer; display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.82rem; }
+.eb-item strong { color: var(--text-primary); font-size: 0.88rem; }
+.eb-item.active, .eb-item:hover { border-color: var(--primary); }
+.eb-note { color: var(--text-muted); font-size: 0.82rem; margin: 0.25rem 0; }
+.eb-mapwrap { flex: 1; min-width: 0; position: relative; }
+.eb-map { position: absolute; inset: 0; }
+.eb-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.8rem 1.1rem; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.eb-chosen { display: flex; flex-direction: column; gap: 0.15rem; color: var(--text-secondary); font-size: 0.85rem; min-width: 0; }
+.eb-chosen strong { color: var(--text-primary); }
+@media (max-width: 760px) {
+  .eb-modal, .eb-modal-large { height: 96vh; }
+  .eb-body { flex-direction: column-reverse; }
+  .eb-side { width: 100%; border-right: none; border-top: 1px solid var(--border); max-height: 38%; }
 }
