@@ -20,9 +20,14 @@ export function PrintIcon({ size = 36 }: IconProps) {
   )
 }
 
+// Piese imprimante 3D: cheie fixa (wrench) — iconita aleasa pentru aceasta categorie, peste tot pe site.
 export function GearIcon({ size = 36 }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none"><path d="M20 6l2.5 1.5 2-1 2 2-1 2L27 13v4l-1.5 2.5 1 2-2 2-2-1L20 24l-2.5-1.5-2 1-2-2 1-2L13 17v-4l1.5-2.5-1-2 2-2 2 1z" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round"/><circle cx="20" cy="17" r="4" stroke="var(--primary)" strokeWidth="2"/><circle cx="31" cy="28" r="4" stroke="var(--primary)" strokeWidth="1.5"/><circle cx="31" cy="28" r="1.5" fill="var(--primary)"/><line x1="31" y1="22" x2="31" y2="20" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/><line x1="31" y1="34" x2="31" y2="36" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/><line x1="25" y1="28" x2="23" y2="28" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/><line x1="37" y1="28" x2="35" y2="28" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/></svg>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+        stroke="var(--primary)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
+      />
+    </svg>
   )
 }
-
