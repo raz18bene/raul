@@ -217,6 +217,7 @@ export default function EasyboxMap({ open, onClose, onSelect, selectedId, title,
               <div className="eb-chosen">
                 <strong>{selected.name}</strong>
                 <span>{selected.address}, {selected.city}, {selected.county} {selected.postalCode}</span>
+                <span style={{ opacity: 0.7 }}>ID punct SameDay: {selected.id}</span>
               </div>
               <button type="button" className="btn btn-primary" onClick={() => { onSelect(selected); onClose() }}>
                 ✔ Alege acest easybox

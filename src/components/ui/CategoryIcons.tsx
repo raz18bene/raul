@@ -16,7 +16,12 @@ export function ChipIcon({ size = 36 }: IconProps) {
 
 export function PrintIcon({ size = 36 }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 44 44" fill="none"><rect x="4" y="18" width="36" height="15" rx="3" stroke="var(--primary)" strokeWidth="2"/><path d="M12 18V13a2 2 0 012-2h16a2 2 0 012 2v5" stroke="var(--primary)" strokeWidth="2"/><rect x="13" y="23" width="18" height="10" rx="1.5" stroke="var(--primary)" strokeWidth="1.5"/><circle cx="36" cy="26" r="2.5" fill="var(--primary)" opacity=".8"/><line x1="18" y1="27" x2="27" y2="27" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round"/><line x1="22" y1="13" x2="22" y2="5" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/><path d="M18 9l4-4 4 4" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    <svg width={size} height={size} viewBox="0 0 44 44" fill="none">
+      <path d="M22 6L8 14v16l14 8 14-8V14L22 6z" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round"/>
+      <path d="M8 14l14 8 14-8" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round"/>
+      <line x1="22" y1="22" x2="22" y2="38" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="22" y1="16" x2="22" y2="20" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" opacity="0.6"/>
+    </svg>
   )
 }
 

@@ -563,6 +563,34 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
   // Debifat = SameDay trimite curierul sa ridice coletul de la voi.
   const [personalHandover, setPersonalHandover] = useState(order.shipping_method === 'easybox')
   const [shippingMethod, setShippingMethod] = useState<string>(order.shipping_method || 'sameday')
+  const [invoice, setInvoice] = useState<any>(order.invoice || null)
+  const [invoiceLoading, setInvoiceLoading] = useState(false)
+
+  // Emite factura in Oblio direct din datele comenzii (PF/PJ, produse, transport)
+  async function generateInvoice() {
+    if (!confirm('Emit factura în Oblio pentru comanda ' + order.order_number + '? Factura nu se poate anula de aici.')) return
+    setInvoiceLoading(true)
+    try {
+      const { data: sess } = await sb.auth.getSession()
+      const r = await fetch('/api/oblio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create-invoice', orderId: order.id, accessToken: sess?.session?.access_token || '' }),
+      })
+      const d = await r.json()
+      if (d.success) {
+        setInvoice(d.invoice)
+        order.invoice = d.invoice
+        alert(`✅ Factură emisă: ${d.invoice.series} ${d.invoice.number}`)
+        onUpdate()
+      } else {
+        alert('❌ ' + (d.error || 'Eroare necunoscută la emiterea facturii.'))
+      }
+    } catch (e: any) {
+      alert('❌ ' + (e.message || 'Eroare de rețea.'))
+    }
+    setInvoiceLoading(false)
+  }
 
   // Admin alege / schimba easybox-ul: salvam imediat pe comanda (adresa de livrare devine adresa easybox-ului)
   async function changeLocker(l: Locker) {
@@ -745,6 +773,20 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
           <div style={{ padding: '0.75rem', background: 'var(--bg-input)', borderRadius: 8, marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
             🏢 Ridicare de la sediu — fără AWB
           </div>
+        )}
+
+        {/* Factura Oblio */}
+        {invoice?.number ? (
+          <div style={{ padding: '0.75rem 1rem', background: 'rgba(72,187,120,0.1)', border: '1px solid var(--success)', borderRadius: 8, marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: 'var(--success)', fontWeight: 600 }}>🧾 Factura {invoice.series} {invoice.number}</span>
+            {invoice.link && <a href={invoice.link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontSize: '0.85rem' }}>Deschide →</a>}
+          </div>
+        ) : (
+          <button onClick={generateInvoice} disabled={invoiceLoading}
+            title="Emite factura în Oblio cu datele comenzii: client persoană fizică sau juridică, produse și transport"
+            style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--primary)', borderRadius: 8, fontFamily: 'var(--font-display)', fontWeight: 700, cursor: 'pointer', marginBottom: '1rem' }}>
+            {invoiceLoading ? '⏳ Se emite factura...' : '🧾 Emite factură în Oblio'}
+          </button>
         )}
 
         {mapOpen && (
