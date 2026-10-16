@@ -559,6 +559,9 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
   // Easybox ales de client (sau schimbat de admin) + bifa "predam noi la un punct SameDay"
   const [locker, setLocker] = useState<Locker | null>(order.shipping_address?.locker || null)
   const [mapOpen, setMapOpen] = useState(false)
+  // Punctul SameDay unde predam NOI coletul (alt punct decat cel de livrare); ales pe harta, per comanda
+  const [dropLocker, setDropLocker] = useState<Locker | null>(null)
+  const [dropMapOpen, setDropMapOpen] = useState(false)
   // Comenzile in easybox: implicit bifat "predare personala" (ducem noi coletul la un punct SameDay).
   // Debifat = SameDay trimite curierul sa ridice coletul de la voi.
   const [personalHandover, setPersonalHandover] = useState(order.shipping_method === 'easybox')
@@ -566,10 +569,12 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
   const [invoice, setInvoice] = useState<any>(order.invoice || null)
   const [invoiceLoading, setInvoiceLoading] = useState(false)
 
-  // Emite factura in Oblio direct din datele comenzii (PF/PJ, produse, transport)
-  async function generateInvoice() {
-    if (!confirm('Emit factura în Oblio pentru comanda ' + order.order_number + '? Factura nu se poate anula de aici.')) return
+  // Emite factura in Oblio direct din datele comenzii (PF/PJ, produse, transport).
+  // auto=true: apelata automat la generarea AWB — nu cere confirmare si returneaza un mesaj, fara alert.
+  async function generateInvoice(auto = false): Promise<string> {
+    if (!auto && !confirm('Emit factura în Oblio pentru comanda ' + order.order_number + '? Factura nu se poate anula de aici.')) return ''
     setInvoiceLoading(true)
+    let msg = ''
     try {
       const { data: sess } = await sb.auth.getSession()
       const r = await fetch('/api/oblio', {
@@ -581,15 +586,17 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
       if (d.success) {
         setInvoice(d.invoice)
         order.invoice = d.invoice
-        alert(`✅ Factură emisă: ${d.invoice.series} ${d.invoice.number}`)
+        msg = `✅ Factură emisă: ${d.invoice.series} ${d.invoice.number}`
         onUpdate()
       } else {
-        alert('❌ ' + (d.error || 'Eroare necunoscută la emiterea facturii.'))
+        msg = '❌ Factura NU s-a emis: ' + (d.error || 'eroare necunoscută.')
       }
     } catch (e: any) {
-      alert('❌ ' + (e.message || 'Eroare de rețea.'))
+      msg = '❌ Factura NU s-a emis: ' + (e.message || 'eroare de rețea.')
     }
     setInvoiceLoading(false)
+    if (!auto) alert(msg)
+    return msg
   }
 
   // Admin alege / schimba easybox-ul: salvam imediat pe comanda (adresa de livrare devine adresa easybox-ului)
@@ -642,6 +649,7 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
         accessToken: sess?.session?.access_token || '',
         lockerId: shippingMethod === 'easybox' && locker ? locker.id : undefined,
         personalHandover,
+        firstMileLockerId: personalHandover && dropLocker ? dropLocker.id : undefined,
         orderNumber: order.order_number,
         recipientName: order.customer_name,
         recipientPhone: order.customer_phone,
@@ -658,7 +666,9 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
     const d = await r.json()
     if (d.success) {
       await sb.from('orders').update({ awb_number: d.awbNumber, status: 'shipped' } as any).eq('id', order.id)
-      alert(`✅ AWB generat: ${d.awbNumber}`)
+      // Factura se emite automat odata cu AWB-ul (daca nu exista deja una). Daca factura eșuează, AWB-ul ramane valid.
+      const invMsg = invoice?.number ? '' : await generateInvoice(true)
+      alert(`✅ AWB generat: ${d.awbNumber}` + (invMsg ? '\n' + invMsg + (invMsg.startsWith('❌') ? '\nPoți reîncerca din butonul „Emite factură în Oblio".' : '') : ''))
       onUpdate()
     } else {
       // d.error e acum un mesaj deja tradus in romana, cu exact ce camp e gresit
@@ -755,12 +765,20 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
               <p style={{ marginBottom: '0.5rem' }}>{shippingMethod === 'easybox' ? <>⚠️ <strong style={{ color: 'var(--text-primary)' }}>Comandă pentru easybox</strong> fără punct ales. Alege easybox-ul pe hartă înainte de AWB.</> : 'Livrare la adresă. Poți trimite coletul într-un easybox în loc.'}</p>
             )}
             <button type="button" onClick={() => setMapOpen(true)} className="btn btn-secondary btn-sm">🗺️ {locker ? 'Schimbă easybox-ul pe hartă' : 'Alege easybox pe hartă'}</button>
-            {locker && (
-              <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginTop: '0.75rem', cursor: 'pointer' }}
-                title="Bifează dacă predai tu coletul personal la un punct SameDay (ex. easybox) în loc să vină curierul la ridicare">
-                <input type="checkbox" checked={personalHandover} onChange={e => setPersonalHandover(e.target.checked)} style={{ marginTop: 3 }} />
-                <span>Predare personală în orice punct de livrare SameDay — predăm noi coletul la un punct. Debifează dacă vrei să vină curierul să-l ridice.</span>
-              </label>
+            <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginTop: '0.75rem', cursor: 'pointer' }}
+              title="Bifează dacă predai tu coletul personal la un punct SameDay (ex. easybox) în loc să vină curierul la ridicare">
+              <input type="checkbox" checked={personalHandover} onChange={e => setPersonalHandover(e.target.checked)} style={{ marginTop: 3 }} />
+              <span>Predare personală în orice punct de livrare SameDay — predăm noi coletul la un punct. Debifează dacă vrei să vină curierul să-l ridice.</span>
+            </label>
+            {personalHandover && (
+              <div style={{ marginTop: '0.6rem', paddingLeft: '1.5rem' }}>
+                {dropLocker ? (
+                  <p style={{ marginBottom: '0.4rem' }}>📍 Predăm la: <strong style={{ color: 'var(--text-primary)' }}>{dropLocker.name}</strong><br />{dropLocker.address}, {dropLocker.city}</p>
+                ) : (
+                  <p style={{ marginBottom: '0.4rem' }}>Nu ai ales punctul de predare. Se folosește punctul implicit din setări, dacă există.</p>
+                )}
+                <button type="button" onClick={() => setDropMapOpen(true)} className="btn btn-secondary btn-sm">🗺️ {dropLocker ? 'Schimbă punctul de predare' : 'Alege punctul de predare pe hartă'}</button>
+              </div>
             )}
           </div>
           <button onClick={generateAWB} disabled={awbLoading}
@@ -775,6 +793,13 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
           </div>
         )}
 
+        {order.proforma?.number && (
+          <div style={{ padding: '0.6rem 1rem', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+            <span>📄 Proformă trimisă clientului: {order.proforma.series} {order.proforma.number}</span>
+            {order.proforma.link && <a href={order.proforma.link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>Deschide →</a>}
+          </div>
+        )}
+
         {/* Factura Oblio */}
         {invoice?.number ? (
           <div style={{ padding: '0.75rem 1rem', background: 'rgba(72,187,120,0.1)', border: '1px solid var(--success)', borderRadius: 8, marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -782,11 +807,16 @@ function OrderModal({ order, onClose, onUpdate, onDelete, sb }: { order: any, on
             {invoice.link && <a href={invoice.link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontSize: '0.85rem' }}>Deschide →</a>}
           </div>
         ) : (
-          <button onClick={generateInvoice} disabled={invoiceLoading}
+          <button onClick={() => generateInvoice()} disabled={invoiceLoading}
             title="Emite factura în Oblio cu datele comenzii: client persoană fizică sau juridică, produse și transport"
             style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--primary)', borderRadius: 8, fontFamily: 'var(--font-display)', fontWeight: 700, cursor: 'pointer', marginBottom: '1rem' }}>
             {invoiceLoading ? '⏳ Se emite factura...' : '🧾 Emite factură în Oblio'}
           </button>
+        )}
+
+        {dropMapOpen && (
+          <EasyboxMap open={dropMapOpen} onClose={() => setDropMapOpen(false)} onSelect={setDropLocker} selectedId={dropLocker?.id} large
+            title="📍 Alege punctul SameDay unde predai coletul" />
         )}
 
         {mapOpen && (
