@@ -57,6 +57,7 @@ export interface Order {
     // Prezent doar la livrarea in easybox
     locker?: Locker
   }
+  proforma?: { series: string; number: string | number; link?: string | null; issuedAt?: string } | null
   invoice?: { series: string; number: string | number; link?: string | null; issuedAt?: string } | null
   billing?: {
     type: 'pf' | 'pj'

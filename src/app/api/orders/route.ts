@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
+import { issueOblioDocument } from '@/lib/oblio'
 
 export async function POST(req: Request) {
   try {
@@ -127,6 +128,16 @@ async function handleCreateOrder(req: Request) {
     total_price: i.price * i.quantity,
   }))
   await supabase.from('order_items').insert(items)
+
+  // Persoana juridica: proforma emisa automat in Oblio si trimisa pe email (pentru transfer bancar / ramburs).
+  // La plata cu cardul nu se face proforma (se plateste pe loc, factura se emite la expediere).
+  // Daca esueaza, comanda ramane valida — proforma se poate emite si manual.
+  if (billing.type === 'pj' && body.paymentMethod !== 'card') {
+    try {
+      const pf = await issueOblioDocument('proforma', order.id)
+      if (!pf.success) console.warn('Proforma Oblio eșuată (non-fatal):', pf.error)
+    } catch (e) { console.warn('Proforma Oblio eșuată (non-fatal):', e) }
+  }
 
   // Decrease stock in Oblio (non-blocking)
   try {

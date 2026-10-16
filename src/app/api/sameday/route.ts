@@ -189,13 +189,14 @@ export async function POST(req: Request) {
       const serviceEnvName = isLocker ? 'SAMEDAY_SERVICE_ID_LOCKER' : 'SAMEDAY_SERVICE_ID'
       const service = parseInt(process.env[serviceEnvName] || '')
       const contactPerson = parseInt(process.env.SAMEDAY_CONTACT_PERSON || '')
-      const firstMileId = parseInt(process.env.SAMEDAY_FIRST_MILE_LOCKER_ID || '')
+      // Punctul de predare: ales pe harta, pentru fiecare comanda (body.firstMileLockerId); daca nu e ales, punctul implicit din Vercel
+      const firstMileId = Number(body.firstMileLockerId) > 0 ? Number(body.firstMileLockerId) : parseInt(process.env.SAMEDAY_FIRST_MILE_LOCKER_ID || '')
 
       const missingEnv = [
         !pickupPoint || isNaN(pickupPoint) ? 'SAMEDAY_PICKUP_POINT' : null,
         !service || isNaN(service) ? serviceEnvName : null,
         !contactPerson || isNaN(contactPerson) ? 'SAMEDAY_CONTACT_PERSON' : null,
-        personalHandover && (!firstMileId || isNaN(firstMileId)) ? 'SAMEDAY_FIRST_MILE_LOCKER_ID' : null,
+        personalHandover && (!firstMileId || isNaN(firstMileId)) ? 'punctul de predare (alege-l pe hartă la „Predare personală” sau setează SAMEDAY_FIRST_MILE_LOCKER_ID)' : null,
       ].filter(Boolean)
       if (missingEnv.length) {
         return NextResponse.json({
