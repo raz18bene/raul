@@ -1,4 +1,4 @@
-# Netopia Keys - NU PUNE ÎN GIT!
+﻿# Netopia Keys - NU PUNE ÃŽN GIT!
 netopia-keys/
 *.key
 *.cer
@@ -44,3 +44,5 @@ build/
 # Temporary files
 *.tmp
 *.temp
+.next/
+*.tsbuildinfo

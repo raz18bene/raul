@@ -1,3 +1,6 @@
+import type { Metadata } from 'next'
+export const metadata: Metadata = { alternates: { canonical: '/' } }
+
 import Link from 'next/link'
 import { SpoolIcon, ChipIcon, PrintIcon, GearIcon } from '@/components/ui/CategoryIcons'
 

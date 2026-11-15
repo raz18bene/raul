@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react'
-import { supabaseClient } from '@/lib/supabase'
 import { Product } from '@/types'
 import ProductCard from './ProductCard'
 
@@ -8,13 +7,12 @@ interface Props {
   categorySlug: string
   title: string
   subtitle?: string
-  initialProducts?: Product[] | null
+  initialProducts: Product[]
   seoContent?: { heading: string; paragraphs: string[] }
 }
 
 export default function ProductsPage({ categorySlug, title, subtitle, initialProducts, seoContent }: Props) {
-  const [products, setProducts] = useState<Product[]>(initialProducts ?? [])
-  const [loading, setLoading] = useState(initialProducts == null)
+  const products = initialProducts
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('default')
   const [filterAvail, setFilterAvail] = useState('all')
@@ -26,29 +24,6 @@ export default function ProductsPage({ categorySlug, title, subtitle, initialPro
   const searchStorageKey = `tn_search_${categorySlug}`
 
   useEffect(() => {
-    async function load() {
-      // Produsele vin deja in HTML. Folosim cererea din browser doar ca fallback.
-      if (initialProducts != null) return
-      setLoading(true)
-      const sb = supabaseClient()
-      const { data: cat } = await sb
-        .from('categories')
-        .select('id')
-        .eq('slug', categorySlug)
-        .single()
-
-      if (!cat) { setLoading(false); return }
-
-      const { data } = await sb
-        .from('products')
-        .select('*, categories(name, slug)')
-        .eq('category_id', cat.id)
-        .eq('is_active', true)
-
-      setProducts(data || [])
-      setLoading(false)
-    }
-    load()
     // La revenirea pe pagina asta (ex. dupa "Back" de pe un produs), recitim cautarea
     // salvata in acest tab de browser, ca sa nu se piarda.
     try {
@@ -175,12 +150,12 @@ export default function ProductsPage({ categorySlug, title, subtitle, initialPro
           </button>
         )}
         <span className="filter-results">
-          {!loading && `${filtered.length} produse`}
+          {`${filtered.length} produse`}
         </span>
       </div>
 
       {/* Dynamic attribute filters — chips */}
-      {!loading && attrKeys.length > 0 && (
+      {attrKeys.length > 0 && (
         <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {attrKeys.map(key => (
             <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -235,9 +210,7 @@ export default function ProductsPage({ categorySlug, title, subtitle, initialPro
       )}
 
       {/* Products grid */}
-      {loading ? (
-        <div className="loading-state"><div className="spinner" /></div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="empty-state">
           <span style={{ fontSize: '3rem' }}>📦</span>
           <p>Niciun produs pentru criteriile selectate.</p>

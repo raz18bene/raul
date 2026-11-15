@@ -8,6 +8,7 @@ export default async function FilamentePage() {
 
   return (
     <ProductsPage
+      key="filamente"
       initialProducts={initialProducts}
       categorySlug="filamente-3d"
       title="Filamente 3D PLA, PETG și TPU"

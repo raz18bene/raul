@@ -8,6 +8,7 @@ export default async function ComponentePage() {
 
   return (
     <ProductsPage
+      key="componente"
       initialProducts={initialProducts}
       categorySlug="componente-electronice"
       title="Componente Electronice și Arduino în Timișoara"

@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - seo-google
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -11,7 +13,7 @@ permissions:
 
 jobs:
   verify:
-    name: TypeScript and production build
+    name: SEO and contact integration checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -29,7 +31,7 @@ jobs:
         run: npm ci
       - name: TypeScript check
         run: npx tsc --noEmit
-      - name: Next.js production build
-        run: npm run build
-      - name: Verify server-rendered SEO HTML (mock data, no real database)
-        run: node scripts/seo-smoke-test.mjs
+      - name: Contact and catalog regression tests
+        run: npm test
+      - name: Build and verify SEO with local fixtures (no real database or email)
+        run: npm run test:seo

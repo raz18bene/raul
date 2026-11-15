@@ -1,32 +1,23 @@
 'use client'
 
 import { useState } from 'react'
+import { useContactSubmission } from '@/hooks/useContactSubmission'
 
 export default function PoliticaRetur() {
   const [form, setForm] = useState({
     name: '', email: '', phone: '', orderNumber: '',
     productName: '', reason: '', bankIBAN: '', bankName: '',
   })
-  const [sent, setSent] = useState(false)
-  const [sending, setSending] = useState(false)
+  const { sent, sending, error, submit } = useContactSubmission()
   const setF = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setSending(true)
-    await fetch('/api/contact', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        message: `Cerere retur\nNr. comandă: ${form.orderNumber}\nProdus: ${form.productName}\nMotiv: ${form.reason}\nIBAN: ${form.bankIBAN}\nBancă: ${form.bankName}`,
-        type: 'cerere-retur',
-      }),
-    })
-    setSent(true)
-    setSending(false)
+    await submit(() => ({
+      ...form,
+      message: `Cerere retur\nNr. comandă: ${form.orderNumber}\nProdus: ${form.productName}\nMotiv: ${form.reason}\nIBAN: ${form.bankIBAN}\nBancă: ${form.bankName}`,
+      type: 'cerere-retur',
+    }))
   }
 
   return (
@@ -66,7 +57,7 @@ export default function PoliticaRetur() {
             <div style={{ textAlign: 'center', padding: '2.5rem' }}>
               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
               <h3 style={{ color: 'var(--success)', fontFamily: 'var(--font-display)', marginBottom: '0.5rem' }}>
-                Cererea a fost trimisă!
+                Cererea a fost înregistrată!
               </h3>
               <p style={{ color: 'var(--text-secondary)' }}>
                 Te contactăm în maxim 24h cu instrucțiunile de retur și adresa de expediere.
@@ -143,6 +134,7 @@ export default function PoliticaRetur() {
                 🔒 Datele bancare sunt folosite exclusiv pentru rambursarea sumei și nu sunt stocate în nicio bază de date externă.
               </div>
 
+              <p role="alert" style={{ color: 'var(--error)' }}>{error}</p>
               <button
                 type="submit"
                 className="btn btn-primary"

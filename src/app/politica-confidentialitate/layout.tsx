@@ -1,10 +1,10 @@
-import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
-  title: "Politica de Confidențialitate",
-  description: "Cum colectăm, folosim și protejăm datele tale personale pe TechNest.",
-  alternates: { canonical: "/politica-confidentialitate" },
-}
+export const metadata = pageMetadata(
+  "/politica-confidentialitate",
+  "Politica de Confidențialitate",
+  "Cum colectăm, folosim și protejăm datele tale personale pe TechNest.",
+)
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return <>{children}</>

@@ -8,6 +8,7 @@ export default async function AccesoriiPage() {
 
   return (
     <ProductsPage
+      key="accesorii"
       initialProducts={initialProducts}
       categorySlug="accesorii"
       title="Piese și accesorii pentru imprimante 3D"

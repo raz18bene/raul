@@ -1,10 +1,10 @@
-import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
-  title: "Protecția consumatorilor – ANPC",
-  description: "Informații ANPC și soluționarea alternativă a litigiilor pentru consumatori.",
-  alternates: { canonical: "/anpc" },
-}
+export const metadata = pageMetadata(
+  "/anpc",
+  "Protecția consumatorilor – ANPC",
+  "Informații ANPC și soluționarea alternativă a litigiilor pentru consumatori.",
+)
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return <>{children}</>
