@@ -1,3 +1,5 @@
+> Document istoric. Pentru pachetul actual și instrucțiunile de integrare folosiți [raportul unic din 17 noiembrie](SEO-SECURITY-INTEGRATION-2026-11-17.md). Unele comportamente descrise mai jos au fost înlocuite de corecțiile de securitate.
+
 # Fișierele pachetului TechNest — 15 noiembrie 2026
 
 Comparație față de `raz18bene/raul:main` la `09657011cf9ffc1a7eed6a184b68dd7a06715cb2`. Lista include și lucrările SEO existente în branch, pentru a putea integra întregul pachet o singură dată.

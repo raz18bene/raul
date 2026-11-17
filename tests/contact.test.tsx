@@ -3,6 +3,13 @@ import assert from 'node:assert/strict'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import ContactPage from '../src/app/contact/page'
 import PrintPage from '../src/app/print3d/page'
+
+test('a private attachment requires a saved admin reference, even if its email succeeds', async () => {
+  const body = parseContact({ name: 'Test', email: 'test@example.invalid', message: 'Model', type: 'oferta-print3d' })!
+  body.fileUrl = 'private:11111111-1111-4111-8111-111111111111/model.stl'
+  assert.equal(await deliverContact(body, { save: async () => false, email: async () => true }), false)
+  assert.equal(await deliverContact(body, { save: async () => true, email: async () => false }), true)
+})
 import { parseContact, deliverContact, contactEmail, submitContact } from '../src/lib/contact'
 
 const input = { name: 'Test <b>Local</b>', email: 'test@example.invalid', message: '<script>test</script>', type: 'contact' }

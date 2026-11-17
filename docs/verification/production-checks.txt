@@ -1,0 +1,83 @@
+TechNest — verificare locală 17 noiembrie 2026, Node 24.22.1
+Comandă: npm run test:seo
+Build exclusiv cu configurare fictivă, a nu se publica.
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> technest@0.1.0 test:seo
+> node scripts/seo-smoke-test.mjs
+
+   ▲ Next.js 15.5.19
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 7.6s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/23) ...
+   Generating static pages (5/23)
+   Generating static pages (11/23)
+   Generating static pages (17/23)
+ ✓ Generating static pages (23/23)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS  Revalidate  Expire
+┌ ○ /                                      169 B         106 kB
+├ ○ /_not-found                            238 B         103 kB
+├ ƒ /accesorii                             126 B         110 kB
+├ ○ /admin                               21.4 kB         187 kB
+├ ○ /admin-tutorial                        238 B         103 kB
+├ ○ /anpc                                  238 B         103 kB
+├ ƒ /api/contact                           238 B         103 kB
+├ ƒ /api/netopia                           238 B         103 kB
+├ ƒ /api/netopia/callback                  238 B         103 kB
+├ ƒ /api/oblio                             238 B         103 kB
+├ ƒ /api/orders                            238 B         103 kB
+├ ƒ /api/print3d-files                     238 B         103 kB
+├ ƒ /api/products                          238 B         103 kB
+├ ƒ /api/sameday                           238 B         103 kB
+├ ƒ /api/stripe                            238 B         103 kB
+├ ƒ /api/stripe/webhook                    238 B         103 kB
+├ ƒ /api/withdrawals                       238 B         103 kB
+├ ƒ /api/withdrawals/confirmations         238 B         103 kB
+├ ○ /checkout                            6.81 kB         176 kB
+├ ƒ /componente                            127 B         110 kB
+├ ○ /cont                                3.32 kB         169 kB
+├ ○ /contact                             2.08 kB         105 kB
+├ ○ /despre-noi                            238 B         103 kB
+├ ƒ /filamente                             127 B         110 kB
+├ ○ /icon                                  238 B         103 kB
+├ ○ /opengraph-image                       238 B         103 kB
+├ ○ /payment-return                      1.09 kB         107 kB
+├ ○ /piese-imprimante-3d                   238 B         103 kB
+├ ○ /politica-confidentialitate            238 B         103 kB
+├ ○ /politica-gdpr                         238 B         103 kB
+├ ○ /politica-livrare                      238 B         103 kB
+├ ○ /politica-retur                      2.99 kB         106 kB
+├ ○ /print3d                             3.44 kB         169 kB
+├ ƒ /product/[id]                        3.13 kB         172 kB
+├ ○ /robots.txt                            238 B         103 kB
+├ ○ /sitemap.xml                           238 B         103 kB          1h      1y
+└ ○ /termeni-conditii                      238 B         103 kB
++ First Load JS shared by all             103 kB
+  ├ chunks/1255-5c680abb9db89955.js      46.2 kB
+  ├ chunks/4bd1b696-f785427dddbba9fb.js  54.2 kB
+  └ other shared chunks (total)          2.48 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+PASS production build with local Supabase fixtures
+PASS 13 public routes: canonical, social metadata, description, H1 and slash redirects
+PASS all 1005 active products linked in server HTML, including category rows beyond 1000
+PASS 3 product samples and inactive product: SSR, price, availability, canonical and safe JSON-LD
+PASS missing products and routes: HTTP 404, noindex and no inherited homepage canonical
+PASS 5 private/transactional routes retain noindex without homepage canonical
+PASS built API routes reject anonymous administration, private downloads and unsigned payment notifications
+PASS sitemap: 1018 unique canonical URLs, full pagination, no inactive products or invented lastmod
+PASS robots: explicit contact exception and correct sitemap
+PASS legacy accessories redirect and working favicon alias
+PASS contact API: invalid JSON/input 400, total failure 503, persisted request 200 without email
+PASS database outage: category/product return 500 instead of empty catalogs or false 404s
+All 12 SEO integration groups passed using local fixtures only.

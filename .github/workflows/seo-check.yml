@@ -1,4 +1,4 @@
-name: TechNest SEO checks
+name: TechNest security and SEO checks
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   verify:
-    name: SEO and contact integration checks
+    name: Security, PostgreSQL, forms and SEO checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -31,7 +31,7 @@ jobs:
         run: npm ci
       - name: TypeScript check
         run: npx tsc --noEmit
-      - name: Contact and catalog regression tests
+      - name: Security, PostgreSQL, payment and form regression tests
         run: npm test
       - name: Build and verify SEO with local fixtures (no real database or email)
         run: npm run test:seo

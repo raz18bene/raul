@@ -16,7 +16,7 @@ function PaymentContent() {
     <div style={{ textAlign: 'center', padding: '4rem 2rem', maxWidth: 500, margin: '0 auto' }}>
       <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>📋</div>
       <h1 style={{ fontFamily: 'var(--font-display)', color: 'var(--success)', fontSize: '2rem', marginBottom: '1rem' }}>
-        Comandă Plasată!
+        Starea comenzii
       </h1>
       {order && (
         <p style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', fontSize: '1.1rem', marginBottom: '1rem' }}>

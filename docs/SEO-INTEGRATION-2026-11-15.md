@@ -1,3 +1,5 @@
+> Document istoric. Pentru pachetul actual și instrucțiunile de integrare folosiți [raportul unic din 17 noiembrie](SEO-SECURITY-INTEGRATION-2026-11-17.md). Unele comportamente descrise mai jos au fost înlocuite de corecțiile de securitate.
+
 # TechNest — pachet de integrare SEO și formulare
 
 Data: 15 noiembrie 2026. Branch de predare: `tomaraul12/raul:seo-google`.

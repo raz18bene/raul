@@ -48,6 +48,9 @@ export async function deliverContact(body: ContactSubmission, channels: {
   email: (body: ContactSubmission) => Promise<boolean>
 }): Promise<boolean> {
   const results = await Promise.allSettled([channels.save(body), channels.email(body)])
+  // Private attachments can only be retrieved through their saved admin record.
+  // An email alone must not report a complete request if that reference was lost.
+  if (body.fileUrl?.startsWith('private:')) return results[0].status === 'fulfilled' && results[0].value === true
   // An accepted email OR a persisted request is a valid registration. A failed
   // secondary channel must not invite a retry that duplicates a saved request.
   return results.some(result => result.status === 'fulfilled' && result.value === true)

@@ -118,6 +118,15 @@ try {
     assert.ok(meta(html, 'twitter:title'))
     assert.equal((html.match(/<h1\b/g) ?? []).length, 1, path + ' must have one H1')
     assert.doesNotMatch(meta(html, 'robots') ?? '', /noindex/)
+    assert.match(html, /href="\/politica-retur#retragere"/, path + ' must expose the withdrawal function')
+    if (path === '/') {
+      assert.match(html, /<title>Printare 3D Timișoara, filamente și Arduino \| TechNest<\/title>/)
+      assert.equal(meta(html, 'og:title'), html.match(/<title>(.*?)<\/title>/)?.[1])
+    }
+    if (path === '/politica-retur') {
+      assert.doesNotMatch(html, /name="iban"|name="bank"|<input[^>]+IBAN/i)
+      assert.match(html, /id="retragere"/)
+    }
     if (path !== '/') {
       assert.equal(meta(html, 'og:title'), html.match(/<title>(.*?)<\/title>/)?.[1])
       const redirect = await fetch(site + path + '/', { redirect: 'manual' })
@@ -172,6 +181,18 @@ try {
     assert.doesNotMatch(html, /rel="canonical"/)
   }
   pass('5 private/transactional routes retain noindex without homepage canonical')
+
+  for (const [path, method, body] of [
+    ['/api/products', 'POST', {}], ['/api/products', 'PUT', {}], ['/api/products', 'DELETE', {}],
+    ['/api/oblio', 'POST', { action: 'sync-stock' }], ['/api/oblio', 'POST', { action: 'decrease-stock' }],
+    ['/api/oblio?action=test', 'GET'], ['/api/print3d-files?path=private.stl', 'GET'],
+    ['/api/withdrawals/confirmations', 'POST', {}],
+  ]) {
+    const response = await fetch(site + path, { method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) })
+    assert.equal(response.status, 401, path + ' must require authorization')
+  }
+  assert.equal((await fetch(site + '/api/netopia/callback', { method: 'POST', body: JSON.stringify({ payment: { status: 5 } }) })).status, 400)
+  pass('built API routes reject anonymous administration, private downloads and unsigned payment notifications')
 
   const xml = await (await fetch(site + '/sitemap.xml')).text()
   const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1])
