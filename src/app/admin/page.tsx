@@ -917,7 +917,7 @@ export default function AdminPage() {
   const pendingOrdersCount = useMemo(() => orders.filter((o: any) => o.status === 'pending').length, [orders])
 
   async function checkAdminRole(user: any) {
-    const role = user?.app_metadata?.role || user?.user_metadata?.role
+    const role = user?.app_metadata?.role
     if (role === 'admin') { setAuthed(true); setCheckingAuth(false); loadData() }
     else {
       // Contul e valid, dar nu e de admin — nu ii aratam un formular de login aici,
@@ -950,7 +950,8 @@ export default function AdminPage() {
 
   async function syncStock() {
     setSyncMsg('⏳ Se sincronizează...')
-    const r = await fetch('/api/oblio?action=sync-stock')
+    const { data: sessionData } = await sb!.auth.getSession()
+    const r = await fetch('/api/oblio', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionData.session?.access_token || ''}` }, body: JSON.stringify({ action: 'sync-stock' }) })
     const d = await r.json()
     setSyncMsg(d.success ? `✅ ${d.updated_count} produse actualizate din ${d.total_oblio} în Oblio` : '❌ ' + (d.error || 'Eroare'))
     if (d.success) loadData()
@@ -1008,9 +1009,17 @@ export default function AdminPage() {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <a href="/admin-tutorial" target="_blank" className="btn btn-secondary btn-sm" title="Deschide tutorialul complet, pas cu pas, cu exemple">📖 Tutorial Filtre</a>
+          <button className="btn btn-secondary btn-sm" onClick={async () => {
+            const { data: sessionData } = await sb!.auth.getSession()
+            const response = await fetch('/api/withdrawals/confirmations', { method: 'POST', headers: { Authorization: `Bearer ${sessionData.session?.access_token || ''}` } })
+            const result = await response.json()
+            alert(response.ok ? `Confirmări trimise: ${result.sent}; încă în așteptare în acest lot: ${result.pending}.` : 'Confirmările nu au putut fi procesate.')
+          }}>Retrimite confirmări retragere</button>
           <button className="btn btn-secondary btn-sm" onClick={syncStock} title="Actualizează stocurile din contul Oblio pe site, ca să nu vinzi produse epuizate">🔄 Sync Oblio</button>
           <button className="btn btn-secondary btn-sm" title="Verifică dacă legăturile cu SameDay (curier) și Oblio (facturare) funcționează corect" onClick={async () => {
-            const [s, o] = await Promise.all([fetch('/api/sameday?action=test'), fetch('/api/oblio?action=test')])
+            const { data: sessionData } = await sb!.auth.getSession()
+            const headers = { Authorization: `Bearer ${sessionData.session?.access_token || ''}` }
+            const [s, o] = await Promise.all([fetch('/api/sameday?action=test', { headers }), fetch('/api/oblio?action=test', { headers })])
             const [sd, od] = await Promise.all([s.json(), o.json()])
             alert(`SameDay: ${sd.ok ? '✅' : '❌ ' + sd.error}\nOblio: ${od.ok ? '✅' : '❌ ' + od.error}`)
           }}>🔧 Test Integrări</button>
@@ -1725,9 +1734,14 @@ function ContactRequests({ sb }: { sb: any }) {
                       </div>
                     )}
                     {r.file_url && (
-                      <a href={r.file_url} target="_blank" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem', background: 'rgba(0,217,255,0.08)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--primary)', fontSize: '0.88rem', textDecoration: 'none', width: 'fit-content' }}>
-                        📎 Descarcă fișierul atașat
-                      </a>
+                      <button className="btn btn-secondary btn-sm" onClick={async () => {
+                        if (!r.file_url?.startsWith('private:')) { alert('Fișier vechi: necesită migrarea din spațiul public. Contactează administratorul tehnic.'); return }
+                        const { data: sessionData } = await sb.auth.getSession()
+                        const response = await fetch('/api/print3d-files?path=' + encodeURIComponent(r.file_url.slice(8)), { headers: { Authorization: `Bearer ${sessionData.session?.access_token || ''}` } })
+                        const result = await response.json()
+                        if (!response.ok || !result.url) { alert('Fișier indisponibil.'); return }
+                        window.open(result.url, '_blank', 'noopener,noreferrer')
+                      }}>Descarcă fișierul privat</button>
                     )}
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
                       <a href={`mailto:${r.email}?subject=Re: ${typeLabels[r.type] || ''} - TechNest`}

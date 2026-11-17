@@ -25,6 +25,7 @@ export default function Footer() {
             <li><Link href="/despre-noi">Despre Noi</Link></li>
             <li><Link href="/politica-livrare">Politica de Livrare</Link></li>
             <li><Link href="/politica-retur">Politica de Retur</Link></li>
+            <li><Link href="/politica-retur#retragere">Retrage-te din contract aici</Link></li>
             <li><Link href="/politica-confidentialitate">Confidențialitate</Link></li>
             <li><Link href="/termeni-conditii">Termeni și Condiții</Link></li>
             <li><Link href="/anpc">ANPC</Link></li>

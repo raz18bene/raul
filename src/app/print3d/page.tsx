@@ -10,30 +10,32 @@ export default function Print3DPage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', material: 'PLA', message: '' })
   const [file, setFile] = useState<File | null>(null)
   const { sending, sent, error, submit, reset } = useContactSubmission()
-  const uploaded = useRef<{ file: File; url: string } | null>(null)
+  const uploaded = useRef<{ file: File; attachment: { path: string; proof: string } } | null>(null)
   const setF = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     await submit(async () => {
-      let fileUrl = null
+      let attachment = null
       if (file) {
         if (file.size > 50 * 1024 * 1024) throw new Error('Fișierul depășește limita de 50 MB.')
-        if (uploaded.current?.file === file) fileUrl = uploaded.current.url
+        if (uploaded.current?.file === file) attachment = uploaded.current.attachment
         else {
           try {
             const sb = supabaseClient()
-            const path = `print3d-requests/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`
-            const { data, error: uploadError } = await sb.storage.from('products').upload(path, file)
-            if (uploadError || !data) throw new Error('upload failed')
-            fileUrl = sb.storage.from('products').getPublicUrl(data.path).data.publicUrl
-            uploaded.current = { file, url: fileUrl }
+            const prepared = await fetch('/api/print3d-files', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: file.name, size: file.size }) })
+            const data = await prepared.json()
+            if (!prepared.ok || !data.path || !data.token || !data.proof) throw new Error('upload unavailable')
+            const result = await sb.storage.from('print3d-requests').uploadToSignedUrl(data.path, data.token, file)
+            if (result.error) throw new Error('upload failed')
+            attachment = { path: data.path, proof: data.proof }
+            uploaded.current = { file, attachment }
           } catch {
             throw new Error('Fișierul nu a putut fi încărcat. Încearcă din nou sau trimite cererea fără atașament.')
           }
         }
       }
-      return { ...form, type: 'oferta-print3d', fileUrl }
+      return { ...form, type: 'oferta-print3d', attachment }
     })
   }
 

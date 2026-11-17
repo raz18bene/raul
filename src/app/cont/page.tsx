@@ -64,7 +64,7 @@ export default function ContPage() {
   }, [])
 
   async function loadAccount(u: any) {
-    const role = u?.app_metadata?.role || u?.user_metadata?.role
+    const role = u?.app_metadata?.role
     if (role === 'admin') {
       setRedirectingAdmin(true)
       router.replace('/admin')

@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
+import { requireAdmin as authorizeAdmin, apiError } from '@/lib/api-security'
 
 // SameDay auth helper
 async function getSamedayToken() {
@@ -280,9 +281,10 @@ export async function GET(req: Request) {
   const action = searchParams.get('action')
 
   if (action === 'test') {
+    try { await authorizeAdmin(req) } catch (error) { return apiError(error) }
     try {
       const token = await getSamedayToken()
-      return NextResponse.json({ ok: true, message: 'SameDay ✅', token_preview: token.slice(0, 10) + '...' })
+      return NextResponse.json({ ok: true, message: 'SameDay ✅' })
     } catch (e: any) {
       return NextResponse.json({ ok: false, error: e.message })
     }

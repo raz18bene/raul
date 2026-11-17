@@ -3,7 +3,6 @@ import assert from 'node:assert/strict'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import ContactPage from '../src/app/contact/page'
 import PrintPage from '../src/app/print3d/page'
-import ReturnPage from '../src/app/politica-retur/page'
 import { parseContact, deliverContact, contactEmail, submitContact } from '../src/lib/contact'
 
 const input = { name: 'Test <b>Local</b>', email: 'test@example.invalid', message: '<script>test</script>', type: 'contact' }
@@ -42,7 +41,7 @@ test('client rejects HTTP errors, malformed replies, explicit failure and networ
   await submitContact(input, (async () => new Response('{"success":true}')) as typeof fetch)
 })
 
-for (const [name, Page] of [['contact', ContactPage], ['print3d', PrintPage], ['return', ReturnPage]] as const) {
+for (const [name, Page] of [['contact', ContactPage], ['print3d', PrintPage]] as const) {
   test(`${name}: failed submission preserves inputs, prevents double submission and permits retry`, async () => {
     const original = globalThis.fetch
     let renderer: ReactTestRenderer | undefined

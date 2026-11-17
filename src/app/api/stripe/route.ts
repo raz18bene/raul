@@ -1,82 +1,37 @@
-export const dynamic = "force-dynamic"
-
+export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
+import { SITE_URL } from '@/lib/site'
+import { apiError, ApiError, jsonBody } from '@/lib/api-security'
+import { money } from '@/lib/checkout'
+import { payableOrder, paymentAttempt, validateStripeSession } from '@/lib/payments'
 
 export async function POST(req: Request) {
   try {
-    return await handleCreateCheckoutSession(req)
-  } catch (e: any) {
-    // Plasa de siguranta: orice eroare neasteptata tot trebuie sa iasa ca JSON valid —
-    // altfel checkout-ul crapa la res.json() cu "Unexpected end of JSON input", chiar
-    // daca intre timp comanda a fost deja creata cu succes in baza de date.
-    console.error('Eroare neasteptata in /api/stripe:', e)
-    return NextResponse.json({ success: false, error: 'A apărut o eroare neașteptată la inițierea plății. Comanda ta a fost înregistrată — te rugăm să reîncerci plata sau să ne contactezi.' }, { status: 500 })
-  }
-}
-
-async function handleCreateCheckoutSession(req: Request) {
-  let orderData: any
-  try {
-    orderData = await req.json()
-  } catch {
-    return NextResponse.json({ success: false, error: 'Cerere invalidă (fără date de comandă).' }, { status: 400 })
-  }
-
-  if (!process.env.STRIPE_SECRET_KEY) {
-    return NextResponse.json({ success: false, error: 'Stripe nu este configurat (lipsește STRIPE_SECRET_KEY).' }, { status: 500 })
-  }
-
-  const host = req.headers.get('host') || ''
-  const proto = host.includes('localhost') ? 'http' : 'https'
-  const baseUrl = `${proto}://${host}`
-
-  const items = (orderData.items || []) as { name: string, price: number, quantity: number }[]
-  if (!items.length) {
-    return NextResponse.json({ success: false, error: 'Coșul este gol.' }, { status: 400 })
-  }
-
-  const line_items: any[] = items.map(i => ({
-    price_data: {
-      currency: 'ron',
-      product_data: { name: i.name },
-      unit_amount: Math.round((i.price || 0) * 100), // Stripe vrea suma in bani (RON are 2 zecimale), nu in lei
-    },
-    quantity: i.quantity || 1,
-  }))
-
-  const shippingCost = Number(orderData.shippingCost) || 0
-  if (shippingCost > 0) {
-    line_items.push({
-      price_data: {
-        currency: 'ron',
-        product_data: { name: 'Transport' },
-        unit_amount: Math.round(shippingCost * 100),
-      },
-      quantity: 1,
-    })
-  }
-
-  try {
+    const { sb, order, amount } = await payableOrder(req, await jsonBody(req))
+    const attempt = await paymentAttempt(sb, order.id, 'stripe', amount)
     const stripe = getStripe()
+    if (attempt.provider_id) {
+      const existing = await stripe.checkout.sessions.retrieve(attempt.provider_id)
+      validateStripeSession(existing, attempt, order, /^(sk|rk)_live_/.test(process.env.STRIPE_SECRET_KEY ?? ''))
+      if (existing.status !== 'open' || !existing.url) throw new ApiError(409, 'Sesiunea existentă nu mai permite plata.')
+      return NextResponse.json({ success: true, url: existing.url }, { headers: { 'Cache-Control': 'no-store' } })
+    }
+    const line_items = order.order_items.map((i: any) => ({
+      price_data: { currency: 'ron', product_data: { name: i.product_name }, unit_amount: money(i.unit_price) }, quantity: i.quantity,
+    }))
+    if (money(order.shipping_cost)) line_items.push({ price_data: { currency: 'ron', product_data: { name: 'Transport' }, unit_amount: money(order.shipping_cost) }, quantity: 1 })
     const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      payment_method_types: ['card'],
-      line_items,
-      client_reference_id: orderData.orderNumber,
-      customer_email: orderData.customerEmail || undefined,
-      metadata: {
-        orderNumber: orderData.orderNumber || '',
-        customerName: orderData.customerName || '',
-        customerPhone: orderData.customerPhone || '',
-      },
-      success_url: `${baseUrl}/payment-return?order=${encodeURIComponent(orderData.orderNumber || '')}&method=card`,
-      cancel_url: `${baseUrl}/checkout?stripe_cancelled=1`,
-    })
-
-    return NextResponse.json({ success: true, url: session.url })
-  } catch (e: any) {
-    console.error('Eroare Stripe la crearea sesiunii de checkout:', e)
-    return NextResponse.json({ success: false, error: 'Nu s-a putut iniția plata cu cardul (Stripe). Comanda a fost înregistrată — încearcă din nou sau alege altă metodă de plată.' }, { status: 502 })
-  }
+      mode: 'payment', payment_method_types: ['card'], line_items,
+      client_reference_id: order.order_number, customer_email: order.customer_email,
+      metadata: { orderId: order.id, orderNumber: order.order_number, attemptId: attempt.id },
+      payment_intent_data: { metadata: { orderId: order.id, attemptId: attempt.id } },
+      success_url: `${SITE_URL}/payment-return?order=${encodeURIComponent(order.order_number)}&method=card`,
+      cancel_url: `${SITE_URL}/checkout?stripe_cancelled=1`,
+    }, { idempotencyKey: `technest-${attempt.id}` })
+    if (!session.url || session.amount_total !== amount || session.currency !== 'ron') throw new ApiError(502, 'Sesiune de plată inconsistentă.')
+    const { error } = await sb.from('payment_attempts').update({ provider_id: session.id, status: 'open' }).eq('id', attempt.id)
+    if (error) throw new ApiError(503, 'Sesiunea nu a putut fi înregistrată. Reîncearcă aceeași comandă.')
+    return NextResponse.json({ success: true, url: session.url }, { headers: { 'Cache-Control': 'no-store' } })
+  } catch (error) { return apiError(error) }
 }

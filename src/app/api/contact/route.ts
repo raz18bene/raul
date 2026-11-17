@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
+import { verifyAttachment, PRINT_BUCKET } from '@/lib/private-files'
+import { apiError } from '@/lib/api-security'
 import { SITE_URL, BUSINESS } from '@/lib/site'
 import { CONTACT_FAILURE, parseContact, deliverContact, contactEmail } from '@/lib/contact'
 
@@ -9,9 +11,24 @@ export async function POST(req: Request) {
   let input: unknown
   try { input = await req.json() }
   catch { return NextResponse.json({ success: false, error: 'Date invalide.' }, { status: 400 }) }
+  const raw = input as Record<string, unknown> | null
+  if (raw?.fileUrl) return NextResponse.json({ success: false, error: 'Atașament invalid.' }, { status: 400 })
   const body = parseContact(input)
   if (!body) return NextResponse.json({ success: false, error: 'Verifică numele, emailul și mesajul.' }, { status: 400 })
 
+  if (body.type === 'cerere-retur') return NextResponse.json({ success: false, error: 'Folosește funcția de retragere din pagina Politica de retur.' }, { status: 400 })
+  if (raw?.attachment) {
+    try {
+      const attachment = raw.attachment as { path?: unknown; proof?: unknown }
+      const path = verifyAttachment(attachment.path, attachment.proof)
+      if (body.type !== 'oferta-print3d') return NextResponse.json({ success: false }, { status: 400 })
+      const sb = createServiceClient()
+      const bucket = await sb.storage.getBucket(PRINT_BUCKET)
+      const info = await sb.storage.from(PRINT_BUCKET).info(path)
+      if (bucket.error || !bucket.data || bucket.data.public || info.error) return NextResponse.json({ success: false, error: 'Atașamentul nu poate fi confirmat.' }, { status: 400 })
+      body.fileUrl = `private:${path}`
+    } catch (error) { return apiError(error) }
+  }
   const success = await deliverContact(body, {
     async save(data) {
       try {

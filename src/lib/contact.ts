@@ -66,6 +66,6 @@ export function contactEmail(body: ContactSubmission, siteUrl: string) {
     .map(([label, value]) => `<tr><th align="left">${label}</th><td>${escapeHtml(value)}</td></tr>`).join('')
   return {
     subject: `[TechNest] ${labels[body.type]} — ${body.name}`,
-    html: `<div style="font-family:Arial,sans-serif;max-width:600px"><h1>TechNest</h1><h2>${labels[body.type]}</h2><table>${rows}</table><p style="white-space:pre-wrap">${escapeHtml(body.message)}</p>${body.fileUrl ? `<p><a href="${escapeHtml(body.fileUrl)}">Descarcă fișierul atașat</a></p>` : ''}<hr><p>Trimis de pe ${escapeHtml(siteUrl)}</p></div>`,
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px"><h1>TechNest</h1><h2>${labels[body.type]}</h2><table>${rows}</table><p style="white-space:pre-wrap">${escapeHtml(body.message)}</p>${body.fileUrl ? `<p>Atașament disponibil numai administratorului în panoul TechNest.</p>` : ''}<hr><p>Trimis de pe ${escapeHtml(siteUrl)}</p></div>`,
   }
 }

@@ -50,7 +50,7 @@ export function offerPolicies(slug: string | undefined, inStock: boolean) {
       returnMethod: 'https://schema.org/ReturnByMail',
       returnFees: 'https://schema.org/ReturnFeesCustomerResponsibility',
       merchantReturnLink: `${SITE_URL}/politica-retur`,
-      description: 'Retur în 14 zile, în condițiile politicii de retur. Sunt exceptate produsele personalizate și filamentele deschise sau utilizate.',
+      description: 'Retur în 14 zile, în condițiile politicii de retur. Bunurile personalizate sunt exceptate; simpla deschidere nu exclude automat returul.',
     },
   }
 }
