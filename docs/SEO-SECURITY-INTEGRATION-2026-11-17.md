@@ -86,6 +86,7 @@ Verificările de mai jos au fost executate pe pachetul recuperat și finalizat. 
 | TypeScript `npx tsc --noEmit` | Trecut pe versiunea recuperată, Node 24.22.1. |
 | `npm test` | 40 teste trecute, fără servicii reale; include subtestele PostgreSQL. |
 | Build + `npm run test:seo` | Trecut: build de producție și toate cele 12 grupe HTTP, numai cu date fictive. |
+| GitHub Actions — Node 22 | Trecut: TypeScript, 40 teste, build și 12 grupe HTTP. [Execuția 44107610637](https://github.com/tomaraul12/raul/actions/runs/44107610637), commit de cod `bcb77a6dcf6515249277b7451d6ac2b513368ca1`. Actualizarea ulterioară a raportului nu schimbă codul verificat. |
 | `git diff --check` | Trecut. |
 | Compatibilitate upstream | `0965701` inclus în istoric; refetch fără modificări noi. |
 | Lint | Proiectul nu are ESLint configurat; `next lint` ar solicita configurare. Nu este raportat ca test trecut. |
