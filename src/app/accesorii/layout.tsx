@@ -1,10 +1,10 @@
-import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
-  title: "Piese Imprimante 3D",
-  description: "Piese de schimb și consumabile pentru imprimante 3D: duze, hotend-uri, curele, rulmenți, ventilatoare și multe altele.",
-  alternates: { canonical: "/accesorii" },
-}
+export const metadata = pageMetadata(
+  "/accesorii",
+  "Piese și accesorii pentru imprimante 3D",
+  "Caută piese pentru imprimante 3D la TechNest Timișoara: duze, hotend-uri și consumabile. Verifică modelele compatibile și comandă online.",
+)
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return <>{children}</>

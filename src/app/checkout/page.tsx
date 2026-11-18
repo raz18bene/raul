@@ -1,13 +1,14 @@
 'use client'
 
 export const dynamic = 'force-dynamic'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
 import { getSupabase } from '@/lib/supabase'
 import Link from 'next/link'
 import dynamicImport from 'next/dynamic'
 import type { Locker } from '@/types'
+import { rememberedCheckout, rememberCheckout, forgetCheckout } from '@/lib/checkout-storage'
 
 // Harta se incarca doar in browser, la cerere (Leaflet nu merge la server-side render)
 const EasyboxMap = dynamicImport(() => import('@/components/shop/EasyboxMap'), { ssr: false })
@@ -18,7 +19,7 @@ type Payment = 'card' | 'transfer' | 'ramburs'
 // Cheia sub care tinem datele de livrare ale clientului in browser-ul lui,
 // ca sa nu le mai reintroduca de fiecare data cand revine sa cumpere ceva.
 // Nu e un cont — e doar o "amintire" locala, in browser-ul respectiv.
-const SAVED_INFO_KEY = 'tn_checkout_info'
+
 
 export default function CheckoutPage() {
   const { cart, total, clearCart, removeFromCart, updateQty } = useCart()
@@ -26,6 +27,8 @@ export default function CheckoutPage() {
   const [shipping, setShipping] = useState<Shipping>('sameday')
   const [payment, setPayment] = useState<Payment>('card')
   const [loading, setLoading] = useState(false)
+  const busy = useRef(false)
+  const [remember, setRemember] = useState(false)
   const [locker, setLocker] = useState<Locker | null>(null)
   const [mapOpen, setMapOpen] = useState(false)
   // Facturare: persoana fizica sau juridica (acordeon — se deschide doar cea aleasa)
@@ -47,10 +50,10 @@ export default function CheckoutPage() {
   // apoi, daca e si autentificat, datele din contul lui au prioritate (sunt mai sigure).
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(SAVED_INFO_KEY)
+      const saved = rememberedCheckout(localStorage)
       if (saved) {
-        const parsed = JSON.parse(saved)
-        setForm(f => ({ ...f, ...parsed, notes: '' }))
+        setForm(f => ({ ...f, ...saved, notes: '' }))
+        setRemember(true)
       }
     } catch { /* ignoram — nu e critic daca nu merge in acest browser */ }
 
@@ -90,10 +93,11 @@ export default function CheckoutPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (busy.current) return
     if (!cart.length) return alert('Coșul este gol!')
     if (shipping === 'easybox' && !locker) { setMapOpen(true); return alert('Alege un easybox de pe hartă pentru livrare.') }
     if (billingType === 'pj' && !/^(RO)?\s?\d{2,10}$/i.test(bill.cui.trim())) return alert('CUI invalid. Exemplu: RO12345678 sau 12345678.')
-    setLoading(true)
+    busy.current = true; setLoading(true)
 
     try {
       const res = await fetch('/api/orders', {
@@ -129,38 +133,28 @@ export default function CheckoutPage() {
       // Comanda a reusit — salveaza datele de livrare in acest browser, ca data viitoare
       // cand clientul revine sa cumpere ceva, formularul sa fie deja preumplut.
       try {
-        localStorage.setItem(SAVED_INFO_KEY, JSON.stringify({
-          name: form.name, email: form.email, phone: form.phone,
-          address: form.address, city: form.city, county: form.county, postalCode: form.postalCode,
-        }))
+        rememberCheckout(localStorage, form, remember)
       } catch { /* ignoram — nu e critic */ }
 
       // Comanda a fost creata cu succes in acest punct — orice eroare de mai jos
       // (ex. la inițierea plății cu cardul) nu mai anulează comanda, doar plata cu cardul.
       if (payment === 'card') {
+        try {
         const pRes = await fetch('/api/stripe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            orderNumber: data.orderNumber,
-            total: orderTotal,
-            shippingCost,
-            customerName: form.name,
-            customerEmail: form.email,
-            customerPhone: form.phone,
-            address: shipping === 'easybox' && locker ? `${locker.name} — ${locker.address}` : form.address,
-            city: shipping === 'easybox' && locker ? locker.city : form.city,
-            county: shipping === 'easybox' && locker ? locker.county : form.county,
-            postalCode: shipping === 'easybox' && locker ? (locker.postalCode || '') : form.postalCode,
-            items: cart.map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
+            orderId: data.orderId,
+            checkoutToken: data.checkoutToken,
           }),
         })
         const pData = await safeJson(pRes)
-        if (pData.url) {
+        if (pRes.ok && pData.success && pData.url) {
           clearCart()
           window.location.href = pData.url
           return
         }
+        } catch { /* The order exists: a payment-network failure must not invite another order. */ }
         // Nu am primit link de plată — comanda există deja (vezi mai sus), dar clientul
         // trebuie anunțat clar că plata cu cardul nu a pornit, ca sa aleaga alta metoda
         // sau sa ne contacteze, in loc sa vada o eroare tehnica fara sens.
@@ -175,7 +169,7 @@ export default function CheckoutPage() {
     } catch (err: any) {
       alert('Eroare: ' + err.message)
     } finally {
-      setLoading(false)
+      busy.current = false; setLoading(false)
     }
   }
 
@@ -198,6 +192,13 @@ export default function CheckoutPage() {
       <form onSubmit={handleSubmit}>
         <div className="checkout-layout">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input type="checkbox" checked={remember} onChange={e => {
+                setRemember(e.target.checked)
+                if (!e.target.checked) forgetCheckout(localStorage)
+              }} />
+              Reține datele de livrare în acest browser timp de 30 de zile (opțional).
+            </label>
 
             {account ? (
               <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>

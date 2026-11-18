@@ -14,9 +14,9 @@ function PaymentContent() {
 
   return (
     <div style={{ textAlign: 'center', padding: '4rem 2rem', maxWidth: 500, margin: '0 auto' }}>
-      <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>✅</div>
+      <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>📋</div>
       <h1 style={{ fontFamily: 'var(--font-display)', color: 'var(--success)', fontSize: '2rem', marginBottom: '1rem' }}>
-        Comandă Plasată!
+        Starea comenzii
       </h1>
       {order && (
         <p style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', fontSize: '1.1rem', marginBottom: '1rem' }}>
@@ -25,7 +25,7 @@ function PaymentContent() {
       )}
       <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', lineHeight: 1.7 }}>
         {isCard
-          ? 'Plata a fost procesată cu succes. Vei primi un email de confirmare în scurt timp.'
+          ? 'Revenirea pe această pagină nu confirmă plata. Plata este verificată pe server; poți consulta comanda în cont sau contacta magazinul pentru confirmare.'
           : method === 'transfer'
           ? 'Vei primi detaliile pentru transfer bancar pe email în scurt timp.'
           : 'Vei plăti la livrare sau la ridicarea de la sediu.'}

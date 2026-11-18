@@ -2,6 +2,7 @@
 import { Product } from '@/types'
 import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useState } from 'react'
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -52,7 +53,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="product-category-badge">
           {product.categories?.name || ''}
         </div>
-        <h3 className="product-name" style={{ minHeight: "2.6rem", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{product.name}</h3>
+        <h3 className="product-name" style={{ minHeight: "2.6rem", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><Link href={`/product/${product.id}`} onClick={e => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'none' }}>{product.name}</Link></h3>
         {product.description && (
           <p className="product-desc" style={{ minHeight: "2.4rem" }}>{product.description}</p>
         )}

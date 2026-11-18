@@ -1,4 +1,7 @@
 import { createServiceClient } from '@/lib/supabase'
+import { standardVat } from './vat'
+import { storedOrderTotal } from './checkout'
+import { oblioClient, stockDocument } from './oblio-stock'
 
 // Emite un document Oblio (factura sau proforma) din datele unei comenzi.
 // Folosit de panoul de admin (factura, la generarea AWB) si de crearea comenzii (proforma pentru persoane juridice).
@@ -31,6 +34,10 @@ export async function issueOblioDocument(kind: OblioDocKind, orderId: string): P
     const { data: order, error: oErr } = await supabase.from('orders').select('*, order_items(*)').eq('id', orderId).single()
     if (oErr || !order) return { success: false, error: 'Comanda nu a fost găsită.', status: 404 }
 
+    if (order.status === 'cancelled' || (kind === 'invoice' && order.payment_method === 'card' && order.payment_status !== 'paid')) return { success: false, error: 'Comanda nu permite emiterea.', status: 409 }
+    const { data: trusted } = await supabase.from('order_security').select('amount_cents').eq('order_id', order.id).maybeSingle()
+    if (!trusted || Number(trusted.amount_cents) !== storedOrderTotal(order)) return { success: false, error: 'Comanda necesită verificare manuală.', status: 409 }
+
     const column = kind === 'invoice' ? 'invoice' : 'proforma'
     const existing = (order as any)[column]
     // Nu emitem a doua oara acelasi document pentru aceeasi comanda
@@ -43,14 +50,14 @@ export async function issueOblioDocument(kind: OblioDocKind, orderId: string): P
       const lipsa = !series ? (kind === 'invoice' ? 'OBLIO_INVOICE_SERIES (seria de facturi din Oblio, ex. AAA)' : 'OBLIO_PROFORMA_SERIES sau OBLIO_INVOICE_SERIES') : 'OBLIO_CIF'
       return { success: false, error: 'Configurare Oblio incompletă în Vercel: lipsește ' + lipsa + '.', status: 400 }
     }
-    const vatName = process.env.OBLIO_VAT_NAME || 'Normala'
-    const vatPercentage = Number(process.env.OBLIO_VAT_PERCENTAGE ?? 21)
+    const { vatName, vatPercentage } = standardVat()
 
     // Coduri produs (SKU) din catalog, ca sa se potriveasca cu stocul din Oblio
     const ids = (order.order_items || []).map((i: any) => i.product_id).filter(Boolean)
     const skuById: Record<string, string> = {}
     if (ids.length) {
-      const { data: prods } = await supabase.from('products').select('id, sku').in('id', ids)
+      const { data: prods, error: productsError } = await supabase.from('products').select('id, sku').in('id', ids)
+      if (productsError) throw productsError
       for (const p of prods || []) skuById[p.id] = p.sku || ''
     }
 
@@ -63,6 +70,7 @@ export async function issueOblioDocument(kind: OblioDocKind, orderId: string): P
       quantity: Number(i.quantity),
       price: Number(i.unit_price),
       productType: 'Marfa',
+      ...(process.env.OBLIO_MANAGEMENT ? { management: process.env.OBLIO_MANAGEMENT } : {}),
     }))
     const shippingCost = Number(order.shipping_cost) || 0
     if (shippingCost > 0) {
@@ -74,17 +82,7 @@ export async function issueOblioDocument(kind: OblioDocKind, orderId: string): P
     if (!products.length) return { success: false, error: 'Comanda nu are produse.', status: 400 }
 
     // Clientul: persoana juridica (cu CUI, Reg. Com.) sau fizica, din datele de facturare ale comenzii
-    const b = order.billing || {}
-    const ship = order.shipping_address || {}
-    const client: any = b.type === 'pj'
-      ? { cif: b.cui, name: b.company, rc: b.regCom, address: b.address, state: b.county, city: b.city, country: 'Romania', email: order.customer_email, phone: order.customer_phone, vatPayer: !!b.vatPayer || /^RO/i.test(String(b.cui || '')) }
-      : {
-          name: b.name || order.customer_name,
-          address: (b.sameAsDelivery === false ? b.address : ship.street) || ship.street || '',
-          state: (b.sameAsDelivery === false ? b.county : ship.county) || ship.county || '',
-          city: (b.sameAsDelivery === false ? b.city : ship.city) || ship.city || '',
-          country: 'Romania', email: order.customer_email, phone: order.customer_phone, vatPayer: false,
-        }
+    const client = oblioClient(order)
 
     const today = new Date().toISOString().split('T')[0]
     const payload = {
@@ -98,12 +96,17 @@ export async function issueOblioDocument(kind: OblioDocKind, orderId: string): P
       precision: 2,
       currency: 'RON',
       products,
+      ...(kind === 'invoice' ? { useStock: stockDocument() === 'invoice' ? 1 : 0 } : {}),
+      ...(process.env.OBLIO_WORK_STATION ? { workStation: process.env.OBLIO_WORK_STATION } : {}),
+      idempotencyKey: `technest-${kind}-${order.id}`,
       // Oblio trimite documentul (PDF) pe emailul clientului, direct din contul vostru Oblio
       sendEmail: /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(order.customer_email || '')) ? 1 : 0,
       mentions: `Comanda ${order.order_number}`,
       internalNote: `Comanda site ${order.order_number}`,
     }
 
+    const claim = await supabase.from('oblio_operations').insert({ order_id: order.id, kind, state: 'pending' })
+    if (claim.error) return { success: false, error: 'Operație deja pornită; verifică documentul în Oblio înainte de reîncercare.', status: 409 }
     const token = await getToken()
     const r = await fetch(`https://www.oblio.eu/api/docs/${kind}`, {
       method: 'POST',
@@ -118,7 +121,10 @@ export async function issueOblioDocument(kind: OblioDocKind, orderId: string): P
       return { success: false, error: `Oblio a refuzat ${kind === 'invoice' ? 'factura' : 'proforma'}: ` + msg, status: 400, details: d }
     }
     const doc = { series: d.data.seriesName || series, number: d.data.number, link: d.data.link || null, issuedAt: new Date().toISOString() }
-    await supabase.from('orders').update({ [column]: doc } as any).eq('id', order.id)
+    const saved = await supabase.from('orders').update({ [column]: doc } as any).eq('id', order.id)
+    if (saved.error) return { success: false, error: 'Document emis; salvarea locală necesită reconciliere.', status: 503 }
+    const operation = await supabase.from('oblio_operations').update({ state: 'completed', result: doc }).eq('order_id', order.id).eq('kind', kind)
+    if (operation.error) console.warn('Oblio document saved; operation journal requires reconciliation')
     return { success: true, doc }
   } catch (e: any) {
     return { success: false, error: e.message || 'Eroare la emiterea documentului.', status: 500 }

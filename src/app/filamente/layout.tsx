@@ -1,10 +1,10 @@
-import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
-  title: "Filamente 3D",
-  description: "Peste 150 de variante de filamente 3D premium: PLA, PETG, ABS, TPU și altele, în toate culorile. Livrare rapidă în toată țara.",
-  alternates: { canonical: "/filamente" },
-}
+export const metadata = pageMetadata(
+  "/filamente",
+  "Filamente 3D PLA, PETG, TPU și ABS în Timișoara",
+  "Descoperă filamente 3D PLA, PETG, TPU și ABS la TechNest Timișoara. Compară materiale și culori pentru imprimanta ta. Comenzi online și livrare în România.",
+)
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return <>{children}</>

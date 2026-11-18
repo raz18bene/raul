@@ -1,3 +1,6 @@
+import type { Metadata } from 'next'
+export const metadata: Metadata = { alternates: { canonical: '/' } }
+
 import Link from 'next/link'
 import { SpoolIcon, ChipIcon, PrintIcon, GearIcon } from '@/components/ui/CategoryIcons'
 
@@ -17,7 +20,7 @@ export default function HomePage() {
             <span className="hero-highlight">Idei în Realitate</span>
           </h1>
           <p className="hero-description">
-            Furnizor complet de filamente premium, componente electronice și servicii de fabricație digitală. De la concept la produs finit.
+            TechNest Prototyping din Timișoara oferă filamente 3D, componente electronice și piese pentru imprimante 3D, precum și printare 3D la comandă. Comandă produse online sau contactează-ne pentru un proiect.
           </p>
           <div className="hero-cta">
             <Link href="/filamente" className="btn btn-primary">Explorează Produsele →</Link>
@@ -29,7 +32,7 @@ export default function HomePage() {
           {[
             { href: '/filamente', icon: SPOOL_SVG, title: 'Filamente 3D', desc: 'Peste 150 de variante' },
             { href: '/componente', icon: CHIP_SVG, title: 'Componente', desc: 'Electronice de calitate' },
-            { href: '/print3d', icon: PRINT_SVG, title: 'Print 3D Custom', desc: 'La comandă în 24-48h' },
+            { href: '/print3d', icon: PRINT_SVG, title: 'Print 3D Custom', desc: 'Solicită ofertă personalizată' },
             { href: '/accesorii', icon: GEAR_SVG, title: 'Piese Imprimante 3D', desc: 'Piese de schimb' },
           ].map((item, i) => (
             <Link
@@ -51,8 +54,8 @@ export default function HomePage() {
         <h2 className="section-title">De ce TechNest?</h2>
         <div className="features-grid">
           {[
-            { n: '01', t: 'Livrare Rapidă', d: 'Comenzi procesate în aceeași zi. Livrare în toată țara în 24-48h.' },
-            { n: '02', t: 'Stoc Permanent', d: 'Mii de produse disponibile imediat. Stoc actualizat în timp real.' },
+            { n: '01', t: 'Livrare în România', d: 'Verifică disponibilitatea produselor și opțiunile de livrare la finalizarea comenzii.' },
+            { n: '02', t: 'Catalog de produse', d: 'Filamente, componente electronice și consumabile pentru imprimante 3D, cu disponibilitate afișată pentru fiecare produs.' },
             { n: '03', t: 'Servicii Custom', d: 'Print 3D personalizat și piese de schimb pentru imprimante 3D.' },
             { n: '04', t: 'Suport Tehnic', d: 'Echipă dedicată pentru consultanță și suport complet.' },
           ].map(f => (
@@ -72,7 +75,7 @@ export default function HomePage() {
           {[
             { href: '/filamente', icon: SPOOL_SVG, t: 'Filamente 3D', d: 'Peste 150 de variante de filamente premium. Partener oficial Depozitfilament.ro.' },
             { href: '/componente', icon: CHIP_SVG, t: 'Componente Electronice', d: 'Componente de calitate compatibile cu Arduino, Raspberry Pi și altele.' },
-            { href: '/print3d', icon: PRINT_SVG, t: 'Print 3D Custom', d: 'Printare la comandă în 24-48h. Trimite fișierul tău și primești ofertă personalizată.' },
+            { href: '/print3d', icon: PRINT_SVG, t: 'Print 3D Custom', d: 'Trimite fișierul tău pentru o ofertă personalizată de printare 3D și un termen estimat.' },
             { href: '/accesorii', icon: GEAR_SVG, t: 'Piese Imprimante 3D', d: 'Duze, hotend-uri, curele, rulmenți și alte piese de schimb pentru imprimante 3D.' },
           ].map(c => (
             <Link key={c.href} href={c.href} className="category-card">

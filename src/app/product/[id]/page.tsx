@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import type { Product } from '@/types'
 import { SITE_URL, SITE_NAME } from '@/lib/site'
+import { categoryPath, offerPolicies, serializeJsonLd } from '@/lib/seo'
 import ProductClient from './ProductClient'
 
 // Pagina de produs randata pe server: Google primeste direct titlul, descrierea, pretul si
@@ -17,9 +18,10 @@ const getProduct = cache(async (id: string): Promise<Product | null> => {
   if (!UUID_RE.test(id)) return null
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key) return null
+  if (!url || !key) throw new Error('Public catalog configuration missing')
   const sb = createClient(url, key, { auth: { persistSession: false } })
-  const { data } = await sb.from('products').select('*, categories(name,slug)').eq('id', id).maybeSingle()
+  const { data, error } = await sb.from('products').select('*, categories(name,slug)').eq('id', id).maybeSingle()
+  if (error) throw new Error('Product query failed')
   return (data as Product) || null
 })
 
@@ -87,24 +89,26 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       itemCondition: 'https://schema.org/NewCondition',
       availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       seller: { '@id': `${SITE_URL}/#organization` },
+      ...offerPolicies(product.categories?.slug, product.stock > 0),
     },
   }
+  const parentPath = categoryPath(product.categories?.slug)
   const breadcrumbLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Acasă', item: SITE_URL },
-      ...(product.categories?.slug
-        ? [{ '@type': 'ListItem', position: 2, name: product.categories.name, item: `${SITE_URL}/${product.categories.slug === 'filamente-3d' ? 'filamente' : product.categories.slug === 'componente-electronice' ? 'componente' : product.categories.slug === 'print-3d' ? 'print3d' : product.categories.slug}` }]
+      ...(parentPath
+        ? [{ '@type': 'ListItem', position: 2, name: product.categories?.name, item: `${SITE_URL}${parentPath}` }]
         : []),
-      { '@type': 'ListItem', position: product.categories?.slug ? 3 : 2, name: product.name },
+      { '@type': 'ListItem', position: parentPath ? 3 : 2, name: product.name },
     ],
   }
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbLd) }} />
       <ProductClient productId={product.id} initialProduct={product} />
     </>
   )

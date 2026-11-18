@@ -2,56 +2,55 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useContactSubmission } from '@/hooks/useContactSubmission'
 import { supabaseClient } from '@/lib/supabase'
 
 export default function Print3DPage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', material: 'PLA', message: '' })
   const [file, setFile] = useState<File | null>(null)
-  const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
+  const { sending, sent, error, submit, reset } = useContactSubmission()
+  const uploaded = useRef<{ file: File; attachment: { path: string; proof: string } } | null>(null)
   const setF = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.name || !form.email) return
-    setSending(true)
-
-    let fileUrl = null
-    if (file) {
-      try {
-        const sb = supabaseClient()
-        const path = `print3d-requests/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`
-        const { data } = await sb.storage.from('products').upload(path, file)
-        if (data) {
-          const { data: url } = sb.storage.from('products').getPublicUrl(path)
-          fileUrl = url.publicUrl
+    await submit(async () => {
+      let attachment = null
+      if (file) {
+        if (file.size > 50 * 1024 * 1024) throw new Error('Fișierul depășește limita de 50 MB.')
+        if (uploaded.current?.file === file) attachment = uploaded.current.attachment
+        else {
+          try {
+            const sb = supabaseClient()
+            const prepared = await fetch('/api/print3d-files', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: file.name, size: file.size }) })
+            const data = await prepared.json()
+            if (!prepared.ok || !data.path || !data.token || !data.proof) throw new Error('upload unavailable')
+            const result = await sb.storage.from('print3d-requests').uploadToSignedUrl(data.path, data.token, file)
+            if (result.error) throw new Error('upload failed')
+            attachment = { path: data.path, proof: data.proof }
+            uploaded.current = { file, attachment }
+          } catch {
+            throw new Error('Fișierul nu a putut fi încărcat. Încearcă din nou sau trimite cererea fără atașament.')
+          }
         }
-      } catch (e) { console.warn('Upload failed:', e) }
-    }
-
-    await fetch('/api/contact', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, type: 'oferta-print3d', fileUrl }),
+      }
+      return { ...form, type: 'oferta-print3d', attachment }
     })
-
-    setSent(true)
-    setSending(false)
   }
 
   return (
     <>
       <div className="page-header animate-fade-down">
-        <h1 className="page-title">Print 3D Custom</h1>
-        <p className="page-subtitle">Printare la comandă în 24-48h — trimite fișierul tău sau descrie proiectul</p>
+        <h1 className="page-title">Printare 3D la comandă în Timișoara</h1>
+        <p className="page-subtitle">Trimite fișierul 3D sau descrie proiectul pentru a primi o ofertă personalizată și un termen estimat.</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
         {[
-          { icon: '⏱️', t: 'Livrare 24-48h', d: 'Comenzile sunt procesate și printate rapid' },
-          { icon: '🎨', t: 'Orice material', d: 'PLA, PETG, ABS, TPU, ASA și altele' },
-          { icon: '📐', t: 'Orice dimensiune', d: 'De la piese mici la obiecte mari' },
+          { icon: '⏱️', t: 'Termen estimat', d: 'Durata depinde de dimensiuni, complexitate și volumul comenzii' },
+          { icon: '🎨', t: 'Materiale variate', d: 'Opțiuni precum PLA, PETG, ABS, TPU sau ASA, în funcție de proiect' },
+          { icon: '📐', t: 'Piese mici și mari', d: 'Dimensiunile realizabile depind de echipament și material' },
           { icon: '💰', t: 'Prețuri competitive', d: 'Ofertă personalizată pentru fiecare proiect' },
         ].map(c => (
           <div key={c.t} className="feature-card">
@@ -62,18 +61,25 @@ export default function Print3DPage() {
         ))}
       </div>
 
+      <section style={{ maxWidth: 850, margin: '0 auto 2.5rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>
+        <h2 className="section-title">Ce informații ne ajută să ofertăm o piesă printată 3D?</h2>
+        <p>Poți atașa un model STL, OBJ, STEP sau 3MF, ori poți descrie piesa dorită dacă nu ai încă un fișier. Menționează dimensiunile aproximative, cantitatea, materialul preferat și condițiile în care va fi folosită piesa.</p>
+        <p>Prețul și termenul de realizare depind de geometrie, dimensiuni, material, numărul de bucăți și finisajul solicitat. După evaluarea proiectului, îți comunicăm soluția disponibilă și estimarea de cost și timp.</p>
+        <p>TechNest oferă servicii de printare 3D la comandă în Timișoara, pentru prototipuri, piese funcționale și proiecte personalizate. Pentru compatibilitate sau material, putem discuta cerințele tehnice înainte de producție.</p>
+      </section>
+
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         {sent ? (
           <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
             <h2 style={{ color: 'var(--success)', fontFamily: 'var(--font-display)', marginBottom: '0.5rem' }}>
-              Cererea a fost trimisă!
+              Cererea a fost înregistrată!
             </h2>
             <p style={{ color: 'var(--text-secondary)' }}>Te contactăm în maxim 24h cu o ofertă personalizată.</p>
             <button
               className="btn btn-secondary"
               style={{ marginTop: '1.5rem' }}
-              onClick={() => { setSent(false); setForm({ name: '', email: '', phone: '', material: 'PLA', message: '' }); setFile(null) }}
+              onClick={() => { reset(); uploaded.current = null; setForm({ name: '', email: '', phone: '', material: 'PLA', message: '' }); setFile(null) }}
             >
               Trimite altă cerere
             </button>
@@ -143,6 +149,7 @@ export default function Print3DPage() {
                   </p>
                 </div>
               </div>
+              <p role="alert" style={{ color: 'var(--error)' }}>{error}</p>
               <button
                 type="submit"
                 className="btn btn-primary"

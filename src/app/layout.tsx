@@ -11,7 +11,7 @@ import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, BUSINESS } from '@/lib/site'
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'TechNest — Filamente 3D, Componente Electronice & Piese Imprimante 3D',
+    default: 'Printare 3D Timișoara, filamente și Arduino | TechNest',
     template: '%s | TechNest',
   },
   description: SITE_DESCRIPTION,
@@ -22,10 +22,10 @@ export const metadata: Metadata = {
     locale: 'ro_RO',
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: 'TechNest — Filamente 3D, Componente Electronice & Piese Imprimante 3D',
+    title: 'Printare 3D Timișoara, filamente și Arduino | TechNest',
     description: SITE_DESCRIPTION,
   },
-  twitter: { card: 'summary_large_image', title: 'TechNest — Filamente 3D & Componente Electronice', description: SITE_DESCRIPTION },
+  twitter: { card: 'summary_large_image', title: 'Printare 3D Timișoara, filamente și Arduino | TechNest', description: SITE_DESCRIPTION },
   // Cod de verificare Google Search Console (optional) — se pune in Vercel ca NEXT_PUBLIC_GOOGLE_VERIFICATION.
   verification: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION ? { google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION } : undefined,
 }

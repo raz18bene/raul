@@ -18,7 +18,7 @@ export default function DespreNoiPage() {
           {[
             { icon: SPOOL, t: 'Filamente 3D', d: 'Peste 150 de variante, partener oficial Depozitul de Filamente Bistrița' },
             { icon: CHIP, t: 'Componente Electronice', d: 'Arduino, Raspberry Pi, senzori și module de calitate superioară' },
-            { icon: PRINT, t: 'Print 3D la Comandă', d: 'Servicii personalizate de printare 3D în 24-48 ore' },
+            { icon: PRINT, t: 'Print 3D la Comandă', d: 'Servicii personalizate de printare 3D, cu termen estimat în funcție de proiect' },
             { icon: GEAR, t: 'Piese Imprimante 3D', d: 'Duze, hotend-uri, curele, rulmenți și alte piese de schimb pentru imprimante 3D' },
           ].map(s => (
             <div key={s.t} className="service-item">

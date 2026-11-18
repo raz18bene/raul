@@ -1,26 +1,25 @@
-export const dynamic = "force-dynamic"
-
+export const dynamic = 'force-dynamic'
+import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
+import { ApiError, apiError } from '@/lib/api-security'
+import { verifyNetopia, validateNetopiaPayment } from '@/lib/netopia-verification'
+import { recordPayment } from '@/lib/payments'
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const orderID = body?.order?.orderID || body?.orderID
-    const status  = body?.order?.status || body?.status
-
-    if (!orderID) return new Response('<?xml version="1.0" encoding="utf-8"?><crc>Missing orderID</crc>', { headers: { 'Content-Type': 'text/xml' } })
-
-    let paymentStatus = 'pending'
-    let orderStatus   = 'processing'
-    if (status === 3) { paymentStatus = 'paid'; orderStatus = 'processing' }
-    else if (status === 5) { paymentStatus = 'failed'; orderStatus = 'cancelled' }
-
-    const supabase = createServiceClient()
-    await supabase.from('orders').update({ payment_status: paymentStatus, status: orderStatus, updated_at: new Date().toISOString() }).eq('order_number', orderID)
-
-    return new Response('<?xml version="1.0" encoding="utf-8"?><crc>confirmed</crc>', { headers: { 'Content-Type': 'text/xml' } })
-  } catch {
-    return new Response('<?xml version="1.0" encoding="utf-8"?><crc>error</crc>', { headers: { 'Content-Type': 'text/xml' } })
-  }
+    const raw = await req.text()
+    const body = await verifyNetopia(raw, req.headers.get('verification-token'), process.env.NETOPIA_IPN_PUBLIC_KEY ?? '', process.env.NETOPIA_SIGNATURE ?? '')
+    if (typeof body?.payment?.ntpID !== 'string') throw new ApiError(400, 'Missing transaction')
+    const sb = createServiceClient()
+    const { data: attempt, error } = await sb.from('payment_attempts').select('*').eq('provider', 'netopia').eq('provider_id', body.payment.ntpID).maybeSingle()
+    if (error) throw new ApiError(503, 'Database unavailable')
+    if (!attempt) throw new ApiError(409, 'Unregistered payment requires manual reconciliation')
+    const result = await sb.from('orders').select('*, order_items(*)').eq('id', attempt.order_id).single()
+    if (result.error || !result.data) throw new ApiError(503, 'Order unavailable')
+    const status = validateNetopiaPayment(body, attempt, result.data)
+    if (status === 'review') console.warn('Netopia event requires reconciliation', body.payment.status)
+    else await recordPayment(attempt, body.payment.ntpID, createHash('sha256').update(raw).digest('hex'), status === 'paid')
+    return NextResponse.json({ errorCode: 0, errorMessage: '' })
+  } catch (error) { return apiError(error) }
 }

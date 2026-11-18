@@ -12,7 +12,7 @@ export default function ANPCPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {[
             { t: 'ANPC — Autoritatea Națională pentru Protecția Consumatorilor', u: 'https://anpc.ro', l: 'anpc.ro' },
-            { t: 'SOL — Platforma de soluționare online a litigiilor (UE)', u: 'https://ec.europa.eu/consumers/odr', l: 'ec.europa.eu/consumers/odr' },
+            { t: 'Organisme de soluționare alternativă a litigiilor (UE)', u: 'https://consumer-redress.ec.europa.eu/dispute-resolution-bodies', l: 'consumer-redress.ec.europa.eu' },
           ].map(item => (
             <div key={item.t} style={{ padding: '1rem', background: 'var(--bg-input)', borderRadius: '10px', border: '1px solid var(--border)' }}>
               <p style={{ color: 'var(--text-primary)', fontWeight: 600, marginBottom: '0.4rem' }}>{item.t}</p>

@@ -4,7 +4,7 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.techne
 
 export const SITE_NAME = 'TechNest'
 export const SITE_DESCRIPTION =
-  'TechNest Prototyping — filamente 3D premium, componente electronice, piese de schimb pentru imprimante 3D și servicii de printare 3D la comandă. Livrare rapidă în toată țara din Timișoara.'
+  'Printare 3D la comandă în Timișoara, prototipuri și piese personalizate. TechNest oferă filamente 3D, Arduino, componente electronice și accesorii pentru imprimante.'
 
 export const BUSINESS = {
   legalName: 'TECHNEST PROTOTYPING S.R.L.',

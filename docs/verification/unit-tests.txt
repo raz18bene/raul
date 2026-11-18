@@ -1,0 +1,59 @@
+TechNest — verificare locală 17 noiembrie 2026, Node 24.22.1
+Comandă: npm test
+Date locale fictive; fără servicii de producție.
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> technest@0.1.0 test
+> TSX_TSCONFIG_PATH=tsconfig.test.json node --import tsx --test tests/*.test.ts tests/*.test.tsx
+
+✔ delivery details require opt-in, expire, exclude tokens and remove legacy browser copies (8.531344ms)
+✔ a private attachment requires a saved admin reference, even if its email succeeds (2.586237ms)
+✔ contact accepts valid form data and rejects invalid payloads before delivery (1.358419ms)
+✔ success requires at least one confirmed delivery channel (0.894238ms)
+✔ email preserves return details, escapes visitor content and uses the canonical site (0.709577ms)
+✔ client rejects HTTP errors, malformed replies, explicit failure and network failure (9.562769ms)
+✔ contact: failed submission preserves inputs, prevents double submission and permits retry (100.233857ms)
+✔ print3d: failed submission preserves inputs, prevents double submission and permits retry (17.119898ms)
+✔ print3d: an oversized attachment never submits a request or shows success (6.281408ms)
+✔ print3d: a failed attachment upload does not silently send an incomplete request (12.637134ms)
+▶ PostgreSQL migrations: atomic checkout, payment integrity and restrictive RLS
+  ✔ prices and names are read from the catalog, not cart fields (29.284821ms)
+  ✔ tampered totals, quantities, duplicates and stock shortages abort the transaction (14.070131ms)
+  ✔ failed line insertion rolls back the order and security record (5.429157ms)
+  ✔ payment is bound to registered provider, transaction, currency and amount (9.931523ms)
+  ✔ duplicate and delayed notifications cannot downgrade a paid order (11.060674ms)
+  ✔ anonymous and self-assigned user_metadata admin cannot write, view orders or call service RPCs (7.013932ms)
+  ✔ a server-controlled admin claim retains catalog administration (2.080903ms)
+  ✔ private attachment policies constrain public grants without hiding product images (8.40788ms)
+  ✔ withdrawal retries preserve timestamp and create a single inbox record (5.888259ms)
+✔ PostgreSQL migrations: atomic checkout, payment integrity and restrictive RLS (3254.222946ms)
+✔ authorized Oblio invoices use stored lines, 21% VAT and a single stock path; retries do not reissue (53.857817ms)
+Order saved; profile update unavailable
+✔ order handler sends trusted fields to the atomic RPC and survives profile failure after saving (72.06927ms)
+✔ Stripe webhook rejects invalid signatures, unpaid sessions and DB failures (18.459714ms)
+✔ Stripe checkout ignores browser totals and uses stored order line items and canonical redirects (5.65682ms)
+✔ privileged endpoints reject missing authorization before database/provider mutation (24.963842ms)
+✔ server authorization ignores self-assigned user_metadata admin (8.077477ms)
+✔ checkout accepts IDs and integer quantities and rejects shipping manipulation (2.501756ms)
+✔ guest checkout tokens must match their stored hash (0.750239ms)
+✔ Stripe concordance rejects other orders, amounts, currency, mode, environment and sessions (1.205768ms)
+✔ Netopia requires RS512 authenticity, correct claims and the exact raw body (152.002234ms)
+✔ private attachment proofs reject path changes, malformed proofs and expiration (2.653584ms)
+✔ Oblio VAT defaults to 21% and refuses stale 19% settings (0.545832ms)
+✔ Oblio has one stock document owner and rejects ambiguous configuration (0.468137ms)
+✔ catalog reads every page even if Supabase caps rows below the requested size (2.835653ms)
+✔ catalog fails the whole request instead of exposing a partial sitemap (2.85874ms)
+✔ breadcrumbs resolve old accessory slugs to the canonical category (0.227787ms)
+✔ JSON-LD safely round-trips catalog text including a closing script tag (0.372233ms)
+✔ commercial markup follows published policies, excluding custom goods and unknown restock dates (0.395974ms)
+✔ withdrawal requires identity, contract and explicit confirmation; never requires a reason or IBAN (4.534626ms)
+✔ withdrawal review precedes sending; failed retries preserve key and success offers a dated durable receipt (85.13801ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4269.709986

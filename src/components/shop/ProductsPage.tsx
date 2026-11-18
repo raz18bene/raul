@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react'
-import { supabaseClient } from '@/lib/supabase'
 import { Product } from '@/types'
 import ProductCard from './ProductCard'
 
@@ -8,11 +7,12 @@ interface Props {
   categorySlug: string
   title: string
   subtitle?: string
+  initialProducts: Product[]
+  seoContent?: { heading: string; paragraphs: string[] }
 }
 
-export default function ProductsPage({ categorySlug, title, subtitle }: Props) {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+export default function ProductsPage({ categorySlug, title, subtitle, initialProducts, seoContent }: Props) {
+  const products = initialProducts
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('default')
   const [filterAvail, setFilterAvail] = useState('all')
@@ -24,27 +24,6 @@ export default function ProductsPage({ categorySlug, title, subtitle }: Props) {
   const searchStorageKey = `tn_search_${categorySlug}`
 
   useEffect(() => {
-    async function load() {
-      setLoading(true)
-      const sb = supabaseClient()
-      const { data: cat } = await sb
-        .from('categories')
-        .select('id')
-        .eq('slug', categorySlug)
-        .single()
-
-      if (!cat) { setLoading(false); return }
-
-      const { data } = await sb
-        .from('products')
-        .select('*, categories(name, slug)')
-        .eq('category_id', cat.id)
-        .eq('is_active', true)
-
-      setProducts(data || [])
-      setLoading(false)
-    }
-    load()
     // La revenirea pe pagina asta (ex. dupa "Back" de pe un produs), recitim cautarea
     // salvata in acest tab de browser, ca sa nu se piarda.
     try {
@@ -171,12 +150,12 @@ export default function ProductsPage({ categorySlug, title, subtitle }: Props) {
           </button>
         )}
         <span className="filter-results">
-          {!loading && `${filtered.length} produse`}
+          {`${filtered.length} produse`}
         </span>
       </div>
 
       {/* Dynamic attribute filters — chips */}
-      {!loading && attrKeys.length > 0 && (
+      {attrKeys.length > 0 && (
         <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {attrKeys.map(key => (
             <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -231,9 +210,7 @@ export default function ProductsPage({ categorySlug, title, subtitle }: Props) {
       )}
 
       {/* Products grid */}
-      {loading ? (
-        <div className="loading-state"><div className="spinner" /></div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="empty-state">
           <span style={{ fontSize: '3rem' }}>📦</span>
           <p>Niciun produs pentru criteriile selectate.</p>
@@ -247,6 +224,15 @@ export default function ProductsPage({ categorySlug, title, subtitle }: Props) {
         <div className="products-grid">
           {filtered.map(p => <ProductCard key={p.id} product={p} />)}
         </div>
+      )}
+
+      {seoContent && (
+        <section aria-label="Informații utile despre categorie" style={{ maxWidth: 960, margin: '3rem auto 0', padding: '0 0.5rem' }}>
+          <h2 className="section-title">{seoContent.heading}</h2>
+          {seoContent.paragraphs.map((paragraph, index) => (
+            <p key={index} style={{ color: 'var(--text-secondary)', lineHeight: 1.75, marginBottom: '1rem' }}>{paragraph}</p>
+          ))}
+        </section>
       )}
     </>
   )
