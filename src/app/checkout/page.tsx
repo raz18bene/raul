@@ -21,7 +21,7 @@ type Payment = 'card' | 'transfer' | 'ramburs'
 const SAVED_INFO_KEY = 'tn_checkout_info'
 
 export default function CheckoutPage() {
-  const { cart, total, clearCart } = useCart()
+  const { cart, total, clearCart, removeFromCart, updateQty } = useCart()
   const router = useRouter()
   const [shipping, setShipping] = useState<Shipping>('sameday')
   const [payment, setPayment] = useState<Payment>('card')
@@ -432,6 +432,16 @@ export default function CheckoutPage() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{item.price.toFixed(2)} RON × {item.quantity}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
+                      <button type="button" aria-label={`Scade cantitatea pentru ${item.name}`} onClick={() => updateQty(item.id, item.quantity - 1)}
+                        style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1 }}>−</button>
+                      <span style={{ minWidth: 22, textAlign: 'center', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{item.quantity}</span>
+                      <button type="button" aria-label={`Crește cantitatea pentru ${item.name}`} onClick={() => updateQty(item.id, item.quantity + 1)}
+                        disabled={item.quantity >= item.stock}
+                        style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-primary)', cursor: item.quantity >= item.stock ? 'not-allowed' : 'pointer', opacity: item.quantity >= item.stock ? 0.5 : 1, fontSize: '1rem', lineHeight: 1 }}>+</button>
+                      <button type="button" onClick={() => removeFromCart(item.id)} aria-label={`Șterge ${item.name} din coș`}
+                        style={{ marginLeft: '0.4rem', background: 'none', border: 'none', color: '#e53e3e', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}>🗑 Șterge</button>
+                    </div>
                   </div>
                   <strong style={{ color: 'var(--primary)', fontFamily: 'var(--font-display)' }}>{(item.price * item.quantity).toFixed(2)} RON</strong>
                 </div>
